@@ -8,6 +8,8 @@ services:
       - "127.0.0.1:3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
+      - ./db/dml.sql:/docker-entrypoint-initdb.d/02_dml.sql:ro
 
   mongo:
     image: mongo:7
