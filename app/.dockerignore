@@ -1,0 +1,14 @@
+# Lo que NO entra en la imagen de la app
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+tests/
+.env
+.env.*
+*.log
+*.key
+*.pem
+.git/
+.vscode/

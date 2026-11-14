@@ -1,36 +1,125 @@
+# SARAIS - configuración base (la que se usa en la VM / producción).
+# En la VM solo se publica el puerto 443. Las bases de datos NO se exponen.
+name: sarais
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  restart: unless-stopped
+  logging: *default-logging
+
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: mysql_db
-    restart: unless-stopped
-    env_file: .env
+  nginx:
+    <<: *hardening
+    build:
+      context: ./docker/nginx
+    image: sarais/nginx:1.0
+    container_name: sarais_nginx
+    depends_on:
+      app:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:3307:3306"
+      - "443:8443"
+    volumes:
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - frontend
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+
+  app:
+    <<: *hardening
+    build:
+      context: ./app
+      dockerfile: ../docker/app/Dockerfile
+    image: sarais/app:1.0
+    container_name: sarais_app
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+      mongo_db:
+        condition: service_healthy
+    environment:
+      TZ: ${TZ}
+      MYSQL_HOST: mysql_db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_APP_USER}
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
+      MONGO_URI: mongodb://${MONGO_APP_USER}:${MONGO_APP_PASSWORD}@mongo_db:27017/${MONGO_INITDB_DATABASE}?authSource=${MONGO_INITDB_DATABASE}
+      SECRET_KEY: ${APP_SECRET_KEY}
+      TOTP_ENC_KEY: ${APP_TOTP_ENC_KEY}
+      DOCUMENTS_DIR: /srv/data/documents
+      DOCS_GPG_RECIPIENT: ${DOCS_GPG_RECIPIENT}
+    volumes:
+      - app_documents:/srv/data/documents
+    networks:
+      - frontend
+      - backend
+    cap_drop:
+      - ALL
+
+  mysql_db:
+    <<: *hardening
+    build:
+      context: ./docker/mysql
+    image: sarais/mysql:8.4
+    container_name: mysql_db
+    environment:
+      TZ: ${TZ}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_APP_USER: ${MYSQL_APP_USER}
+      MYSQL_APP_PASSWORD: ${MYSQL_APP_PASSWORD}
+      MYSQL_BACKUP_USER: ${MYSQL_BACKUP_USER}
+      MYSQL_BACKUP_PASSWORD: ${MYSQL_BACKUP_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
-      - ./db/dml.sql:/docker-entrypoint-initdb.d/02_dml.sql:ro
+      - mysql_keyring:/var/lib/mysql-keyring
+      # Solo la primera vez (volumen vacío): esquema y datos sintéticos
+      - ./db/ddl.sql:/docker-entrypoint-initdb.d/10_ddl.sql:ro
+      - ./db/dml.sql:/docker-entrypoint-initdb.d/20_dml.sql:ro
+    networks:
+      - backend
 
   mongo_db:
-    image: mongo:7
+    <<: *hardening
+    build:
+      context: ./docker/mongo
+    image: sarais/mongo:7.0
     container_name: mongo_db
-    restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      TZ: ${TZ}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
       MONGO_APP_USER: ${MONGO_APP_USER}
       MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
     volumes:
       - mongo_data:/data/db
       - ./db/mongo/init:/docker-entrypoint-initdb.d:ro
       - ./db/mongo/scripts:/scripts:ro
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    networks:
+      - backend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+    internal: true   # sin salida a Internet ni acceso desde el host
 
 volumes:
   mysql_data:
+  mysql_keyring:     # ¡Si se pierde, los datos cifrados de MySQL son irrecuperables!
   mongo_data:
+  app_documents:

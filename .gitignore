@@ -1,3 +1,13 @@
    .env
-   certs/
    backups/
+   certs/
+!docker/nginx/certs/.gitkeep
+# Secretos y datos locales: nunca a Git
+*.gpg
+*.key
+.env
+.venv/
+__pycache__/
+backups/
+docker/nginx/certs/*
+logs/

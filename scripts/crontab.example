@@ -1,0 +1,13 @@
+# Crontab del usuario sarais_ops.  Instalar con:
+#   sudo -u sarais_ops crontab /opt/sarais/scripts/crontab.example
+#   sudo -u sarais_ops crontab -l          (comprobar)
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# min hora día mes día_semana  comando
+# Backup cifrado todos los días a las 2:00 a. m.
+0 2 * * *   /opt/sarais/scripts/backup.sh  >> /var/log/sarais/cron.log 2>&1
+# Monitoreo cada 5 minutos (escribe en /var/log/sarais/metrics/)
+*/5 * * * * /opt/sarais/scripts/monitor.sh > /dev/null 2>&1
+# Limpieza los domingos a las 3:30 a. m.
+30 3 * * 0  /opt/sarais/scripts/cleanup.sh >> /var/log/sarais/cron.log 2>&1

@@ -1,0 +1,5 @@
+# Nunca meter certificados ni llaves dentro de la imagen
+certs/
+*.key
+*.pem
+*.crt

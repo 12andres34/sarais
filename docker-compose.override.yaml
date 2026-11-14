@@ -1,0 +1,29 @@
+# SOLO DESARROLLO (WSL2 + Docker Desktop). Docker Compose lo carga automáticamente.
+# En la VM se ignora porque su .env tiene COMPOSE_FILE=docker-compose.yaml
+# Todos los puertos extra quedan atados a 127.0.0.1: solo tu PC los ve.
+services:
+  app:
+    ports:
+      - "127.0.0.1:8000:8000"     # acceso directo a FastAPI (sin Nginx)
+    environment:
+      APP_ENV: development
+
+  # La red "backend" es interna y Docker no publica puertos en redes internas.
+  # Por eso en desarrollo las bases de datos se conectan también a "devnet".
+  mysql_db:
+    ports:
+      - "127.0.0.1:3306:3306"     # MySQL Workbench
+    networks:
+      - backend
+      - devnet
+
+  mongo_db:
+    ports:
+      - "127.0.0.1:27017:27017"   # MongoDB Compass
+    networks:
+      - backend
+      - devnet
+
+networks:
+  devnet:
+    driver: bridge
