@@ -11,17 +11,25 @@ services:
       - ./db/ddl.sql:/docker-entrypoint-initdb.d/01_ddl.sql:ro
       - ./db/dml.sql:/docker-entrypoint-initdb.d/02_dml.sql:ro
 
-  mongo:
+  mongo_db:
     image: mongo:7
     container_name: mongo_db
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-    ports:
-      - "127.0.0.1:27017:27017"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+      MONGO_APP_USER: ${MONGO_APP_USER}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD}
     volumes:
       - mongo_data:/data/db
+      - ./db/mongo/init:/docker-entrypoint-initdb.d:ro
+      - ./db/mongo/scripts:/scripts:ro
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql_data:
