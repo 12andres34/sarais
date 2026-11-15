@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Matrículas{% endblock %}
+{% block content %}
+<h1>Matrículas</h1>
+
+<section class="card">
+  <h2>Nueva matrícula</h2>
+  <form method="post" action="/admin/enrollments" class="form grid-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Estudiante
+      <select name="student_id" required>
+        {% for s in students %}
+        <option value="{{ s.student_id }}">{{ s.last_name }} {{ s.first_name }} · {{ s.document_number }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Curso
+      <select name="class_group_id" required>
+        {% for g in groups %}
+        <option value="{{ g.class_group_id }}" {% if g.class_group_id == selected_group %}selected{% endif %}>{{ g.academic_year }} · {{ g.grade_level }}{{ g.section }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Fecha <input type="date" name="enrollment_date" value="{{ today }}" required></label>
+    <div class="form-end"><button type="submit" class="btn">Matricular</button></div>
+  </form>
+</section>
+
+<section class="card">
+  <div class="card-head">
+    <h2>Listado</h2>
+    <form method="get" action="/admin/enrollments" class="inline-form">
+      <select name="class_group_id">
+        <option value="">Todos los cursos</option>
+        {% for g in groups %}
+        <option value="{{ g.class_group_id }}" {% if g.class_group_id == selected_group %}selected{% endif %}>{{ g.academic_year }} · {{ g.grade_level }}{{ g.section }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-small">Filtrar</button>
+    </form>
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Año</th><th>Curso</th><th>Documento</th><th>Estudiante</th><th>Fecha</th><th>Estado</th><th>Cambiar estado</th></tr></thead>
+    <tbody>
+    {% for e in enrollments %}
+      <tr>
+        <td>{{ e.academic_year }}</td>
+        <td>{{ e.grade_level }}{{ e.section }}</td>
+        <td>{{ e.document_number }}</td>
+        <td>{{ e.student_name }}</td>
+        <td>{{ e.enrollment_date }}</td>
+        <td><span class="badge {% if e.status == 'active' %}badge-ok{% else %}badge-muted{% endif %}">{{ {'active':'Activa','withdrawn':'Retirada','completed':'Finalizada'}[e.status] }}</span></td>
+        <td>
+          <form method="post" action="/admin/enrollments/{{ e.enrollment_id }}/status" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="return_group" value="{{ selected_group or '' }}">
+            <select name="status">
+              <option value="active" {% if e.status == 'active' %}selected{% endif %}>Activa</option>
+              <option value="withdrawn" {% if e.status == 'withdrawn' %}selected{% endif %}>Retirada</option>
+              <option value="completed" {% if e.status == 'completed' %}selected{% endif %}>Finalizada</option>
+            </select>
+            <button type="submit" class="btn btn-small btn-ghost">Guardar</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="7" class="muted">No hay matrículas para este filtro.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

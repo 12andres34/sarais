@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Asistencia{% endblock %}
+{% block content %}
+<p class="small"><a href="/teacher">← Mis grupos</a></p>
+<h1>Asistencia · {{ assignment.subject_name }} · {{ assignment.grade_level }}{{ assignment.section }} ({{ assignment.academic_year }})</h1>
+
+<section class="card">
+  <form method="get" class="inline-form">
+    <label>Fecha de clase <input type="date" name="class_date" value="{{ class_date.isoformat() }}" max="{{ today }}" required></label>
+    <button type="submit" class="btn btn-small">Ver</button>
+  </form>
+</section>
+
+<section class="card">
+  <form method="post" action="/teacher/assignments/{{ assignment.assignment_id }}/attendance">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="class_date" value="{{ class_date.isoformat() }}">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Documento</th><th>Estudiante</th>{% for value, label in statuses %}<th class="center">{{ label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for s in roster %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ s.document_number }}</td>
+          <td>{{ s.student_name }}</td>
+          {% for value, label in statuses %}
+          <td class="center">
+            <input type="radio" name="status_{{ s.enrollment_id }}" value="{{ value }}" aria-label="{{ label }}"
+                   {% if (s.status or 'present') == value %}checked{% endif %}>
+          </td>
+          {% endfor %}
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="muted">No hay estudiantes activos en este curso.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if roster %}<div class="form-end"><button type="submit" class="btn">Guardar asistencia</button></div>{% endif %}
+  </form>
+</section>
+{% endblock %}

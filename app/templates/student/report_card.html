@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Boletín{% endblock %}
+{% block content %}
+<h1>Mi boletín</h1>
+<p class="small muted">Bajo &lt; 3.0 · Básico 3.0–3.99 · Alto 4.0–4.59 · Superior ≥ 4.6</p>
+{% for p in periods %}
+<section class="card">
+  <div class="card-head">
+    <h2>{{ p.academic_year }} · Periodo {{ p.period_number }} · Curso {{ p.class_group }}</h2>
+    {% if p.average is not none %}<span class="muted">Promedio: <strong>{{ '%.2f' % p.average }}</strong></span>{% endif %}
+  </div>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Área</th><th>Asignatura</th><th>Docente</th><th>Nota</th><th>Desempeño</th><th>Fallas</th><th>Observación</th></tr></thead>
+    <tbody>
+    {% for r in p.rows %}
+      <tr>
+        <td>{{ r.area }}</td>
+        <td>{{ r.subject_name }}</td>
+        <td>{{ r.teacher_name }}</td>
+        <td><strong>{{ '%.2f' % r.score }}</strong></td>
+        <td><span class="badge level-{{ r.performance_level | lower }}">{{ r.performance_level }}</span></td>
+        <td>{{ r.absences }}</td>
+        <td class="small">{{ r.observation or '' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% else %}
+<div class="alert alert-info">Aún no tienes notas registradas.</div>
+{% endfor %}
+{% endblock %}

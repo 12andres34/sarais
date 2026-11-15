@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Auditoría{% endblock %}
+{% block content %}
+<h1>Auditoría</h1>
+<p class="muted">Registro solo-agregar en MongoDB (<code>audit_logs</code>). Esta pantalla solo lee.</p>
+
+<section class="card">
+  <form method="get" action="/admin/audit" class="inline-form">
+    <label>Acción
+      <select name="action">
+        <option value="">Todas</option>
+        {% for a in actions %}
+        <option value="{{ a }}" {% if filters.action == a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>ID de usuario <input type="number" name="user_id" min="1" value="{{ filters.user_id or '' }}"></label>
+    <button type="submit" class="btn btn-small">Filtrar</button>
+  </form>
+</section>
+
+{% if mongo_error %}<div class="alert alert-error">{{ mongo_error }}</div>{% endif %}
+
+<section class="card">
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Fecha (UTC)</th><th>Usuario</th><th>Acción</th><th>Resultado</th><th>IP</th><th>Detalles</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.timestamp or '—' }}</td>
+        <td>{{ r.user_id if r.user_id is not none else '—' }}</td>
+        <td><code>{{ r.action }}</code></td>
+        <td>
+          {% if r.result == 'success' %}<span class="badge badge-ok">Éxito</span>
+          {% elif r.result == 'failure' %}<span class="badge badge-bad">Fallo</span>
+          {% else %}{{ r.result or '—' }}{% endif %}
+        </td>
+        <td>{{ r.ip or '—' }}</td>
+        <td class="small">{{ r.details or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">Sin eventos.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="pager">
+    {% set base = '/admin/audit?action=' ~ (filters.action or '') ~ '&user_id=' ~ (filters.user_id or '') %}
+    {% if filters.page > 1 %}<a class="btn btn-small btn-ghost" href="{{ base }}&page={{ filters.page - 1 }}">← Anterior</a>{% endif %}
+    <span class="muted">Página {{ filters.page }}</span>
+    {% if has_more %}<a class="btn btn-small btn-ghost" href="{{ base }}&page={{ filters.page + 1 }}">Siguiente →</a>{% endif %}
+  </div>
+</section>
+{% endblock %}

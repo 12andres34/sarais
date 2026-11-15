@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Inicio{% endblock %} · SARAIS</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">SARAIS</a>
+    {% if current_user %}
+    <nav class="nav">
+      {% if current_user.role == 'admin' %}
+        <a href="/admin">Inicio</a>
+        <a href="/admin/users">Usuarios</a>
+        <a href="/admin/enrollments">Matrículas</a>
+        <a href="/admin/audit">Auditoría</a>
+      {% elif current_user.role == 'teacher' %}
+        <a href="/teacher">Mis grupos</a>
+      {% elif current_user.role == 'student' %}
+        <a href="/student">Boletín</a>
+        <a href="/student/attendance">Asistencia</a>
+      {% endif %}
+    </nav>
+    <div class="session">
+      <span class="muted">{{ current_user.username }} · {{ role_labels.get(current_user.role, current_user.role) }}</span>
+      {% if csrf_token %}
+      <form method="post" action="/logout" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit" class="btn btn-small btn-ghost">Salir</button>
+      </form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </header>
+
+  <main class="container">
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }}" role="status">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">SARAIS · Sistema académico · Datos sintéticos</footer>
+</body>
+</html>

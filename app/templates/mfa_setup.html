@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Activar MFA{% endblock %}
+{% block content %}
+<section class="card card-narrow">
+  <h1>Activa la verificación en dos pasos</h1>
+  <p class="muted">Es obligatoria. Solo se hace una vez.</p>
+  <ol class="steps">
+    <li>Abre una app autenticadora (Google Authenticator, Microsoft Authenticator, Authy…).</li>
+    <li>Elige <strong>"Ingresar clave de configuración"</strong> y escribe esta clave (tipo: basada en tiempo):
+      <div class="secret">{% for g in secret_groups %}<span>{{ g }}</span>{% endfor %}</div>
+    </li>
+    <li>Escribe aquí el código de 6 dígitos que muestra la app.</li>
+  </ol>
+  <details class="small">
+    <summary>Ver URI de configuración</summary>
+    <code class="break">{{ otpauth_uri }}</code>
+  </details>
+  <form method="post" action="/login/mfa/setup" class="form" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Código
+      <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code" class="code-input">
+    </label>
+    <button type="submit" class="btn">Activar y entrar</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Administración{% endblock %}
+{% block content %}
+<h1>Panel de administración</h1>
+<div class="stats">
+  <div class="stat"><span class="stat-value">{{ counts.active_users }}</span><span class="stat-label">Usuarios activos</span></div>
+  <div class="stat"><span class="stat-value">{{ counts.active_students }}</span><span class="stat-label">Estudiantes activos</span></div>
+  <div class="stat"><span class="stat-value">{{ counts.active_teachers }}</span><span class="stat-label">Docentes activos</span></div>
+  <div class="stat"><span class="stat-value">{{ counts.active_enrollments }}</span><span class="stat-label">Matrículas activas</span></div>
+  <div class="stat{% if counts.locked_users %} stat-warn{% endif %}"><span class="stat-value">{{ counts.locked_users }}</span><span class="stat-label">Cuentas bloqueadas</span></div>
+</div>
+<div class="actions">
+  <a class="btn" href="/admin/users">Gestionar usuarios</a>
+  <a class="btn" href="/admin/enrollments">Gestionar matrículas</a>
+  <a class="btn btn-ghost" href="/admin/audit">Ver auditoría</a>
+</div>
+{% endblock %}

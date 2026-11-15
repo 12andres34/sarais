@@ -1,0 +1,156 @@
+/* SARAIS - estilos locales (sin CDN ni fuentes externas) */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --text: #1f2933;
+  --muted: #66727f;
+  --border: #dde2e8;
+  --primary: #1f4e79;
+  --primary-dark: #163a5a;
+  --ok: #1e7a46;
+  --ok-bg: #e5f4ea;
+  --bad: #b42318;
+  --bad-bg: #fdeceb;
+  --warn-bg: #fff6e0;
+  --info-bg: #e8f0f8;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--primary); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.9em; }
+h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+h2 { font-size: 1.1rem; margin: 0 0 0.75rem; }
+
+/* ---------- Barra superior ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  flex-wrap: wrap;
+}
+.brand { color: #fff; font-weight: 700; font-size: 1.15rem; text-decoration: none; letter-spacing: 0.05em; }
+.nav { display: flex; gap: 1rem; flex: 1; flex-wrap: wrap; }
+.nav a { color: #dce8f3; text-decoration: none; }
+.nav a:hover { color: #fff; text-decoration: underline; }
+.session { display: flex; align-items: center; gap: 0.75rem; }
+.topbar .muted { color: #c7d6e4; }
+.topbar .btn-ghost { color: #fff; border-color: rgba(255, 255, 255, 0.5); }
+
+/* ---------- Contenido ---------- */
+.container { width: 100%; max-width: 1150px; margin: 0 auto; padding: 1.5rem; flex: 1; }
+.footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 1rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.card-narrow { max-width: 440px; margin: 2rem auto; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.center { text-align: center; }
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+.break { word-break: break-all; display: block; padding: 0.5rem; background: var(--bg); border-radius: 4px; }
+
+/* ---------- Formularios ---------- */
+.form { display: flex; flex-direction: column; gap: 0.9rem; }
+.form label, .inline-form label { display: flex; flex-direction: column; gap: 0.3rem; font-weight: 600; font-size: 0.9rem; }
+.grid-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.9rem; }
+.form-end { display: flex; align-items: flex-end; justify-content: flex-end; margin-top: 0.75rem; }
+.inline-form { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; }
+.inline { display: inline; }
+
+input[type="text"], input[type="password"], input[type="email"], input[type="number"],
+input[type="date"], select {
+  font: inherit;
+  font-weight: normal;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  min-width: 0;
+}
+input:focus, select:focus, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+input:disabled { background: var(--bg); color: var(--muted); }
+.score-input { width: 6rem; }
+.code-input { font-size: 1.5rem; letter-spacing: 0.4em; text-align: center; }
+
+/* ---------- Botones ---------- */
+.btn {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn:hover { background: var(--primary-dark); }
+.btn-ghost { background: transparent; color: var(--primary); }
+.btn-ghost:hover { background: var(--info-bg); }
+.btn-small { padding: 0.3rem 0.65rem; font-size: 0.85rem; }
+.actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+/* ---------- Tablas ---------- */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); background: #fafbfc; }
+tbody tr:hover { background: #fafbfc; }
+td.center, th.center { text-align: center; }
+
+/* ---------- Avisos y etiquetas ---------- */
+.alert { padding: 0.75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; border: 1px solid transparent; }
+.alert-success { background: var(--ok-bg); border-color: #b7dfc4; }
+.alert-error { background: var(--bad-bg); border-color: #f5c2bd; }
+.alert-info { background: var(--info-bg); border-color: #c5d8ea; }
+
+.badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--bg); }
+.badge-ok, .level-superior, .level-alto, .status-present { background: var(--ok-bg); color: var(--ok); }
+.badge-bad, .level-bajo, .status-absent { background: var(--bad-bg); color: var(--bad); }
+.level-basico, .status-late { background: var(--warn-bg); color: #8a5a00; }
+.badge-muted, .status-excused { background: var(--bg); color: var(--muted); }
+
+/* ---------- Indicadores ---------- */
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 1.25rem; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; display: flex; flex-direction: column; }
+.stat-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+.stat-label { color: var(--muted); font-size: 0.85rem; }
+.stat-warn .stat-value { color: var(--bad); }
+
+/* ---------- MFA y errores ---------- */
+.steps { padding-left: 1.2rem; }
+.steps li { margin-bottom: 0.6rem; }
+.secret { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; font-family: ui-monospace, Consolas, monospace; font-size: 1.1rem; }
+.secret span { background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 0.2rem 0.4rem; }
+.error-code { font-size: 3rem; font-weight: 700; color: var(--primary); margin: 0; }
+.pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; }
+
+@media (max-width: 640px) {
+  .container { padding: 1rem; }
+  .topbar { padding: 0.75rem 1rem; }
+}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Verificación{% endblock %}
+{% block content %}
+<section class="card card-narrow">
+  <h1>Verificación en dos pasos</h1>
+  <p class="muted">Paso 2 de 2: escribe el código de 6 dígitos de tu app autenticadora.</p>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/login/mfa" class="form" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Código
+      <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code" class="code-input">
+    </label>
+    <button type="submit" class="btn">Verificar</button>
+  </form>
+  <p class="small"><a href="/login">Volver al inicio de sesión</a></p>
+</section>
+{% endblock %}

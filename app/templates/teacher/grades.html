@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Notas{% endblock %}
+{% block content %}
+<p class="small"><a href="/teacher">← Mis grupos</a></p>
+<h1>Notas · {{ assignment.subject_name }} · {{ assignment.grade_level }}{{ assignment.section }} ({{ assignment.academic_year }})</h1>
+
+{% if not periods %}
+  <div class="alert alert-info">No hay periodos creados para {{ assignment.academic_year }}.</div>
+{% else %}
+<section class="card">
+  <form method="get" class="inline-form">
+    <label>Periodo
+      <select name="period_id">
+        {% for p in periods %}
+        <option value="{{ p.period_id }}" {% if period and p.period_id == period.period_id %}selected{% endif %}>
+          Periodo {{ p.period_number }}{% if p.is_closed %} (cerrado){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit" class="btn btn-small">Ver</button>
+  </form>
+</section>
+
+{% if period %}
+<section class="card">
+  {% if period.is_closed %}<div class="alert alert-info">Este periodo está cerrado: solo lectura.</div>{% endif %}
+  <p class="small muted">Escala 0.00 a 5.00. Deja vacía una nota para no modificarla. Bajo &lt; 3.0 · Básico 3.0–3.99 · Alto 4.0–4.59 · Superior ≥ 4.6</p>
+  <form method="post" action="/teacher/assignments/{{ assignment.assignment_id }}/grades">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="period_id" value="{{ period.period_id }}">
+    <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Documento</th><th>Estudiante</th><th>Nota</th><th>Observación</th></tr></thead>
+      <tbody>
+      {% for s in roster %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ s.document_number }}</td>
+          <td>{{ s.student_name }}</td>
+          <td><input class="score-input" type="number" name="score_{{ s.enrollment_id }}" min="0" max="5" step="0.01"
+                     value="{{ '%.2f' % s.score if s.score is not none else '' }}" {% if period.is_closed %}disabled{% endif %}></td>
+          <td><input type="text" name="obs_{{ s.enrollment_id }}" maxlength="255" value="{{ s.observation or '' }}" {% if period.is_closed %}disabled{% endif %}></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="muted">No hay estudiantes activos en este curso.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if roster and not period.is_closed %}<div class="form-end"><button type="submit" class="btn">Guardar notas</button></div>{% endif %}
+  </form>
+</section>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<h1>Usuarios</h1>
+
+<section class="card">
+  <h2>Crear usuario</h2>
+  <form method="post" action="/admin/users" class="form grid-form" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Usuario <input type="text" name="username" maxlength="50" pattern="[A-Za-z0-9._\-]+" required></label>
+    <label>Correo <input type="email" name="email" maxlength="120" required></label>
+    <label>Rol
+      <select name="role" required>
+        <option value="student">Estudiante</option>
+        <option value="teacher">Docente</option>
+        <option value="admin">Administrador</option>
+      </select>
+    </label>
+    <label>Contraseña temporal <input type="password" name="password" minlength="12" maxlength="128" required autocomplete="new-password"></label>
+    <label>Estudiante (si el rol es Estudiante)
+      <select name="student_id">
+        <option value="">—</option>
+        {% for s in free_students %}
+        <option value="{{ s.student_id }}">{{ s.last_name }} {{ s.first_name }} · {{ s.document_number }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Docente (si el rol es Docente)
+      <select name="teacher_id">
+        <option value="">—</option>
+        {% for t in free_teachers %}
+        <option value="{{ t.teacher_id }}">{{ t.last_name }} {{ t.first_name }} · {{ t.document_number }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <div class="form-end"><button type="submit" class="btn">Crear</button></div>
+  </form>
+  <p class="small muted">El usuario registrará su MFA en el primer inicio de sesión.</p>
+</section>
+
+<section class="card">
+  <h2>Listado</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Usuario</th><th>Correo</th><th>Rol</th><th>Persona</th><th>Estado</th><th>MFA</th><th>Último ingreso</th><th>Acciones</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.user_id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ role_labels.get(u.role_name, u.role_name) }}</td>
+        <td>{{ u.person_name or '—' }}</td>
+        <td>
+          {% if not u.is_active %}<span class="badge badge-muted">Inactivo</span>
+          {% elif u.is_locked %}<span class="badge badge-bad">Bloqueado</span>
+          {% else %}<span class="badge badge-ok">Activo</span>{% endif %}
+        </td>
+        <td>{% if u.mfa_enabled %}<span class="badge badge-ok">Sí</span>{% else %}<span class="badge badge-muted">Pendiente</span>{% endif %}</td>
+        <td>{{ u.last_login_at or '—' }}</td>
+        <td class="row-actions">
+          <form method="post" action="/admin/users/{{ u.user_id }}/toggle-active" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-small btn-ghost" type="submit">{% if u.is_active %}Desactivar{% else %}Activar{% endif %}</button>
+          </form>
+          {% if u.is_locked %}
+          <form method="post" action="/admin/users/{{ u.user_id }}/unlock" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-small btn-ghost" type="submit">Desbloquear</button>
+          </form>
+          {% endif %}
+          {% if u.mfa_enabled %}
+          <form method="post" action="/admin/users/{{ u.user_id }}/reset-mfa" class="inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-small btn-ghost" type="submit">Reiniciar MFA</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="muted">No hay usuarios.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,14 @@
+# Dependencias de la app (imagen de producción)
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+jinja2==3.1.5
+python-multipart==0.0.20
+itsdangerous==2.2.0
+SQLAlchemy==2.0.36
+PyMySQL==1.1.1
+cryptography==44.0.0
+pymongo==4.10.1
+pydantic==2.10.4
+# Usadas por el stub de app/security (el chat de seguridad confirma las suyas)
+argon2-cffi==23.1.0
+pyotp==2.9.0
