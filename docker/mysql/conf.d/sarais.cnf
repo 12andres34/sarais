@@ -6,6 +6,15 @@ innodb_redo_log_encrypt = ON
 innodb_undo_log_encrypt = ON
 binlog_encryption = ON
 
+# Cifrado en tránsito: TCP sin TLS -> error 3159. El socket Unix sigue permitido
+# (backup.sh y restore.sh usan docker exec + socket: no cambian).
+# Certificados: scripts/gen_mysql_certs.sh -> docker/mysql/certs (montado en docker-compose.yaml)
+require_secure_transport = ON
+tls_version = TLSv1.2,TLSv1.3
+ssl_ca   = /etc/mysql/certs/ca.pem
+ssl_cert = /etc/mysql/certs/server-cert.pem
+ssl_key  = /etc/mysql/certs/server-key.pem
+
 # Juego de caracteres
 character-set-server = utf8mb4
 collation-server = utf8mb4_0900_ai_ci

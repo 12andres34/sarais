@@ -1,13 +1,16 @@
-   .env
-   backups/
-   certs/
-!docker/nginx/certs/.gitkeep
 # Secretos y datos locales: nunca a Git
+.env
 *.gpg
 *.key
-.env
+*-key.pem
+backups/
+certs/
+docker/nginx/certs/*
+!docker/nginx/certs/.gitkeep
+docker/mysql/certs/*
+!docker/mysql/certs/.gitkeep
+docker/mysql/ca-private/
 .venv/
 __pycache__/
-backups/
-docker/nginx/certs/*
+.pytest_cache/
 logs/

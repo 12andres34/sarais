@@ -6,7 +6,9 @@
   <p class="muted">Es obligatoria. Solo se hace una vez.</p>
   <ol class="steps">
     <li>Abre una app autenticadora (Google Authenticator, Microsoft Authenticator, Authy…).</li>
-    <li>Elige <strong>"Ingresar clave de configuración"</strong> y escribe esta clave (tipo: basada en tiempo):
+    <li>Escanea este código QR con la app:
+      <div class="qr">{{ qr_svg | safe }}</div>
+      O elige <strong>"Ingresar clave de configuración"</strong> y escribe esta clave (tipo: basada en tiempo):
       <div class="secret">{% for g in secret_groups %}<span>{{ g }}</span>{% endfor %}</div>
     </li>
     <li>Escribe aquí el código de 6 dígitos que muestra la app.</li>

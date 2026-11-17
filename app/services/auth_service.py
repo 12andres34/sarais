@@ -80,6 +80,8 @@ def check_password(db: Connection, username: str, password: str, ip: str | None)
         return PasswordResult(ok=False)
 
     if not row["is_active"] or row["is_locked"]:
+        # Mismo costo que una verificación real: el tiempo no revela que la cuenta existe y está bloqueada
+        security.verify_password(password, _get_dummy_hash())
         reason = "inactive" if not row["is_active"] else "locked"
         record(AuditAction.LOGIN_FAILED, user_id=row["user_id"], ip=ip, success=False, details={"reason": reason})
         return PasswordResult(ok=False)
@@ -138,7 +140,11 @@ def get_or_create_setup_secret(db: Connection, user_id: int) -> tuple[str, str]:
     if row is None or row["mfa_enabled"]:
         raise ValueError("MFA ya está activo o el usuario no existe")
     if row["mfa_secret_encrypted"] is not None:
-        return security.decrypt_secret(row["mfa_secret_encrypted"]), row["username"]
+        try:
+            return security.decrypt_secret(row["mfa_secret_encrypted"]), row["username"]
+        except ValueError:
+            # Cifrado con otra llave o con el formato del STUB: se genera uno nuevo
+            logger.warning("Secreto MFA pendiente ilegible para el usuario %s; se regenera", user_id)
     secret = security.generate_totp_secret()
     db.execute(text("""
         UPDATE users SET mfa_secret_encrypted = :enc WHERE user_id = :uid AND mfa_enabled = 0

@@ -9,6 +9,7 @@ PyMySQL==1.1.1
 cryptography==44.0.0
 pymongo==4.10.1
 pydantic==2.10.4
-# Usadas por el stub de app/security (el chat de seguridad confirma las suyas)
+# Seguridad (app/security)
 argon2-cffi==23.1.0
 pyotp==2.9.0
+segno==1.6.6        # QR en SVG para registrar MFA, sin dependencias ni CDN

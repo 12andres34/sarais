@@ -18,7 +18,7 @@ COPY init/05_users.sh /docker-entrypoint-initdb.d/05_users.sh
 # Carpeta del llavero: separada de los datos y solo para el usuario mysql
 RUN mkdir -p /var/lib/mysql-keyring \
  && chown -R mysql:mysql /var/lib/mysql-keyring /var/lib/mysql \
- && chmod 750 /var/lib/mysql-keyring \
+ && chmod 700 /var/lib/mysql-keyring \
  && chmod 644 /usr/sbin/mysqld.my /usr/lib64/mysql/plugin/component_keyring_file.cnf /etc/mysql/conf.d/sarais.cnf \
  && chmod 644 /docker-entrypoint-initdb.d/05_users.sh
 

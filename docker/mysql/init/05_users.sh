@@ -12,9 +12,10 @@
 echo "[init] creando usuarios ${MYSQL_APP_USER} y ${MYSQL_BACKUP_USER}"
 
 docker_process_sql --database=mysql <<-EOSQL
-  -- App: solo CRUD de datos, sin DDL ni privilegios globales
-  CREATE USER IF NOT EXISTS '${MYSQL_APP_USER}'@'%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';
-  GRANT SELECT, INSERT, UPDATE, DELETE ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_APP_USER}'@'%';
+  -- App: SELECT/INSERT/UPDATE (SELECT ... FOR UPDATE necesita SELECT + UPDATE).
+  -- Sin DELETE (la app desactiva, no borra), sin DDL y solo con TLS.
+  CREATE USER IF NOT EXISTS '${MYSQL_APP_USER}'@'%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}' REQUIRE SSL;
+  GRANT SELECT, INSERT, UPDATE ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_APP_USER}'@'%';
 
   -- Backups: solo lectura + lo mínimo que necesita mysqldump
   CREATE USER IF NOT EXISTS '${MYSQL_BACKUP_USER}'@'localhost' IDENTIFIED BY '${MYSQL_BACKUP_PASSWORD}';

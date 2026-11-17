@@ -8,7 +8,7 @@ os.environ.update({
     "COOKIE_SECURE": "false",  # TestClient usa http://testserver
     "MYSQL_DATABASE": "test", "MYSQL_USER": "test", "MYSQL_PASSWORD": "test",
     "MONGO_URI": "mongodb://127.0.0.1:1/sarais_test",
-    "TOTP_ENC_KEY": "test-only-totp-key",
+    "TOTP_ENC_KEY": "dGVzdC1vbmx5LXRvdHAta2V5LTMyLWJ5dGVzLTAwMDA=",  # 32 bytes en base64 (falsa)
 })
 
 import re  # noqa: E402

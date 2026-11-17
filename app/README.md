@@ -8,7 +8,7 @@ app/
 ├── db.py              # MySQL (SQLAlchemy+PyMySQL) y MongoDB (pymongo)
 ├── deps.py            # autorización: get_current_user, require_role
 ├── web.py             # plantillas, CSRF, flash, validación
-├── security/          # ⚠️ STUB: lo reemplaza el chat de seguridad
+├── security/          # Argon2id, TOTP (anti-reutilización + QR), AES-GCM, GPG, auditoría
 ├── models/forms.py    # modelos Pydantic de los formularios
 ├── services/          # lógica + SQL parametrizado (auth, user, enrollment, teacher, student, audit)
 ├── routers/           # rutas: auth, admin, teacher, student, pages

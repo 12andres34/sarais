@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.engine import Connection
 
+from app import security
 from app.config import get_settings
 from app.db import get_db
 from app.models.forms import LoginForm, MfaCodeForm
@@ -112,6 +113,7 @@ def mfa_setup_page(request: Request, db: Connection = Depends(get_db)):
     return render(request, "mfa_setup.html", {
         "secret_groups": [secret[i:i + 4] for i in range(0, len(secret), 4)],
         "otpauth_uri": auth_service.build_otpauth_uri(secret, username),
+        "qr_svg": security.totp_qr_svg(secret, username),  # generado en el servidor, sin CDN
     })
 
 

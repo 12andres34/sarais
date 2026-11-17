@@ -34,9 +34,10 @@ function expectOk(name, fn) {
   catch (e) { print(`FAIL  ${name}: ${e.message}`); failures++; }
 }
 
+// Formato v2 de audit_logs (el que escribe app/security/audit.py)
 const valid = {
-  user_id: NumberInt(1), action: 'LOGOUT', timestamp: new Date(),
-  source_ip: '10.0.0.5', result: 'SUCCESS'
+  user_id: NumberInt(1), action: 'logout', timestamp: new Date(),
+  ip: '10.0.0.5', result: 'success', details: {}
 };
 
 print('--- Validación con JSON Schema ---');
@@ -44,6 +45,16 @@ expectOk('insert válido en audit_logs', () => db.audit_logs.insertOne({ ...vali
 
 expectError('rechaza action fuera del enum', 121, () =>
   db.audit_logs.insertOne({ ...valid, action: 'HACK' }));
+
+expectError('rechaza el formato viejo en MAYÚSCULAS', 121, () =>
+  db.audit_logs.insertOne({ ...valid, action: 'LOGOUT' }));
+
+expectError('rechaza texto libre en details', 121, () =>
+  db.audit_logs.insertOne({ ...valid, details: { comment: 'Nombre Apellido' } }));
+
+expectOk('acepta IDs y notas en details', () =>
+  db.audit_logs.insertOne({ ...valid, action: 'grade_change',
+    details: { enrollment_id: NumberInt(5), old_score: 3.5, new_score: 4.0 } }));
 
 expectError('rechaza documento sin campo obligatorio (result)', 121, () => {
   const d = { ...valid }; delete d.result; db.audit_logs.insertOne(d);
@@ -67,10 +78,10 @@ expectError('rechaza storage_path sin cifrar (.pdf)', 121, () =>
 
 print('--- audit_logs es solo-agregar para la app ---');
 expectError('no puede hacer updateOne', 13, () =>
-  db.audit_logs.updateOne({ action: 'LOGOUT' }, { $set: { result: 'FAILURE' } }));
+  db.audit_logs.updateOne({ action: 'logout' }, { $set: { result: 'failure' } }));
 
 expectError('no puede hacer replaceOne', 13, () =>
-  db.audit_logs.replaceOne({ action: 'LOGOUT' }, { ...valid, result: 'FAILURE' }));
+  db.audit_logs.replaceOne({ action: 'logout' }, { ...valid, result: 'failure' }));
 
 expectError('no puede hacer deleteMany', 13, () =>
   db.audit_logs.deleteMany({}));

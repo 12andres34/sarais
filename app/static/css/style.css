@@ -154,3 +154,7 @@ td.center, th.center { text-align: center; }
   .container { padding: 1rem; }
   .topbar { padding: 0.75rem 1rem; }
 }
+
+/* QR de registro MFA (SVG generado en el servidor) */
+.qr { margin: 0.75rem 0; }
+.qr svg { display: block; width: 200px; height: auto; background: #fff; }

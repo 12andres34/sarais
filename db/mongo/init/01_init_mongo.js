@@ -16,36 +16,40 @@ const appDb = db.getSiblingDB(dbName);
 
 // --- 2. Colección audit_logs ---
 // Solo IDs de MySQL; nada de nombres, correos ni documentos de identidad.
+// Formato v2 (chat de Seguridad): lo escribe app/security/audit.py.
+// Mismo esquema en db/mongo/scripts/migrate_audit_validator.js (para volúmenes ya creados).
 appDb.createCollection('audit_logs', {
   validator: {
     $jsonSchema: {
       bsonType: 'object',
-      title: 'audit_logs',
-      required: ['user_id', 'action', 'timestamp', 'source_ip', 'result'],
+      title: 'audit_logs v2',
+      required: ['timestamp', 'user_id', 'action', 'ip', 'result', 'details'],
       additionalProperties: false,
       properties: {
         _id: { bsonType: 'objectId' },
-        // users.id de MySQL; null si el login falla con un usuario inexistente
+        timestamp: { bsonType: 'date' },
+        // users.user_id de MySQL; null si el login falla con un usuario inexistente
         user_id: { bsonType: ['int', 'long', 'null'], minimum: 1 },
         action: {
           enum: [
-            'LOGIN_SUCCESS', 'LOGIN_FAILED', 'LOGOUT',
-            'MFA_SUCCESS', 'MFA_FAILED', 'ACCOUNT_LOCKED',
-            'USER_CREATE', 'USER_UPDATE', 'ROLE_CHANGE',
-            'GRADE_CREATE', 'GRADE_UPDATE',
-            'ATTENDANCE_CREATE', 'ATTENDANCE_UPDATE',
-            'DOCUMENT_UPLOAD', 'DOCUMENT_DOWNLOAD', 'DOCUMENT_UPDATE', 'DOCUMENT_DELETE',
-            'ACCESS_DENIED', 'BACKUP_RUN'
+            'login_success', 'login_failed', 'mfa_failed', 'mfa_enabled', 'mfa_reset',
+            'account_locked', 'logout', 'user_created', 'user_updated',
+            'enrollment_created', 'enrollment_updated', 'grade_change',
+            'attendance_recorded', 'document_uploaded'
           ]
         },
-        timestamp: { bsonType: 'date' },
-        // 45 caracteres alcanza para IPv6
-        source_ip: { bsonType: 'string', minLength: 3, maxLength: 45 },
-        result: { enum: ['SUCCESS', 'FAILURE', 'DENIED'] },
-        // Datos extra (ej. grade_id, old_value). Se bloquean claves con datos personales.
+        // 45 caracteres alcanza para IPv6; null si no se conoce
+        ip: { bsonType: ['string', 'null'], maxLength: 45 },
+        result: { enum: ['success', 'failure'] },
+        // Solo IDs, números y códigos cortos sin espacios (nunca texto libre)
         details: {
           bsonType: 'object',
-          maxProperties: 20,
+          maxProperties: 10,
+          additionalProperties: {
+            bsonType: ['int', 'long', 'double', 'bool', 'null', 'string'],
+            pattern: '^[A-Za-z0-9_./-]{1,64}$'
+          },
+          // Segunda barrera: claves típicas de datos personales prohibidas
           not: {
             anyOf: [
               { required: ['name'] }, { required: ['first_name'] },
