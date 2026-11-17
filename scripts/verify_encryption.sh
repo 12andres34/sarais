@@ -47,8 +47,11 @@ sch="$(q "SELECT DEFAULT_ENCRYPTION FROM information_schema.SCHEMATA WHERE SCHEM
 [[ "$sch" == "YES" ]] && ok "esquema $DB DEFAULT ENCRYPTION=Y" || note "esquema $DB DEFAULT ENCRYPTION=$sch (ver docs/security_design.md §2.2)"
 
 echo "== 4. TLS =="
-out="$(docker exec "$C" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -h127.0.0.1 --ssl-mode=DISABLED -e "SELECT 1"' 2>&1)"
-if grep -q "3159" <<<"$out"; then ok "TCP sin TLS rechazado (error 3159)"
+# --get-server-public-key: sin él, el cliente aborta antes (2061, caching_sha2_password)
+# y nunca llega a ver la respuesta del servidor. Con él, el servidor responde 3159.
+out="$(docker exec "$C" sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -h127.0.0.1 --ssl-mode=DISABLED --get-server-public-key -e "SELECT 1"' 2>&1)"
+if grep -q "3159" <<<"$out"; then ok "TCP sin TLS rechazado por el servidor (error 3159)"
+elif grep -q "2061" <<<"$out"; then ok "TCP sin TLS rechazado (error 2061: la autenticación exige conexión segura)"
 elif grep -qi "denied" <<<"$out"; then note "root no entra por TCP (bien); prueba 3159 con el usuario de la app (docs/security_tests.md)"
 else bad "TCP sin TLS NO fue rechazado: $out"; fi
 
