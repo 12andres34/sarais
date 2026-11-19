@@ -63,6 +63,7 @@ services:
       MYSQL_SSL_CA: /srv/certs/mysql-ca.pem     # TLS app -> MySQL verificando certificado y nombre
     volumes:
       - app_documents:/srv/data/documents
+      - app_gnupg:/srv/.gnupg          # llave PÚBLICA de documentos: sobrevive a recrear el contenedor
       - ./docker/mysql/certs/ca.pem:/srv/certs/mysql-ca.pem:ro
     networks:
       - frontend
@@ -126,3 +127,4 @@ volumes:
   mysql_keyring:     # ¡Si se pierde, los datos cifrados de MySQL son irrecuperables!
   mongo_data:
   app_documents:
+  app_gnupg:         # keyring GPG de la app (solo llave pública)

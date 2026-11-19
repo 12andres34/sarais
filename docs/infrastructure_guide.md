@@ -21,6 +21,7 @@ docker/
 scripts/
   lib/common.sh                  # funciones compartidas (logs, .env, bloqueo)
   backup.sh  restore.sh  monitor.sh  cleanup.sh  gen_certs.sh
+  gen_env.sh  preflight.sh  metrics_report.py   # despliegue en la VM
   crontab.example
   linux/ setup_users.sh  harden_ssh.sh  setup_ufw.sh
 ```
@@ -58,6 +59,8 @@ Compruébalo en Windows: abre `https://localhost`. El navegador avisará "no es 
 ---
 
 ## 2. Crear la VM en VirtualBox
+
+> **Para desplegar, sigue `docs/deployment_vm.md`**: es el orden verificado (incluye `gen_env.sh`, `preflight.sh`, GPG, métricas y evidencias). Las secciones 2 y 3 quedan como referencia.
 
 ### 2.1 Red del anfitrión (una sola vez)
 1. VirtualBox → **Archivo → Herramientas → Administrador de red** (Network Manager).

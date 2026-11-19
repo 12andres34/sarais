@@ -14,3 +14,4 @@ docker/mysql/ca-private/
 __pycache__/
 .pytest_cache/
 logs/
+*.zip

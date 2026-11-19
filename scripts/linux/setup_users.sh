@@ -56,10 +56,15 @@ create_user sarais_auditor "sarais,sarais-audit"
 # El código no es secreto (está en Git) y los contenedores (UID 999/101) deben
 # poder leer los .sql y scripts de init montados: por eso "otros" pueden leer.
 mkdir -p "$APP_DIR"
-chown -R sarais_ops:sarais "$APP_DIR"
-chmod -R u=rwX,g=rX,o=rX "$APP_DIR"
+# NO se tocan las llaves ni el .env: si este script se repite DESPUÉS de gen_certs.sh
+# o gen_mysql_certs.sh, un chown/chmod -R dejaría las llaves privadas legibles (644)
+# y con el dueño equivocado (MySQL y Nginx no arrancarían).
+skip=( \( -path "$APP_DIR/docker/nginx/certs" -o -path "$APP_DIR/docker/mysql/certs" \
+          -o -path "$APP_DIR/docker/mysql/ca-private" -o -path "$APP_DIR/.env" \) -prune -o )
+find "$APP_DIR" "${skip[@]}" -exec chown sarais_ops:sarais {} +
+find "$APP_DIR" "${skip[@]}" -exec chmod u=rwX,g=rX,o=rX {} +
 # setgid: lo nuevo hereda el grupo sarais
-find "$APP_DIR" -type d -exec chmod g+s {} +
+find "$APP_DIR" "${skip[@]}" -type d -exec chmod g+s {} +
 # Scripts: solo ops (dueño) y su grupo pueden ejecutarlos
 find "$APP_DIR/scripts" -name '*.sh' -exec chmod 750 {} + 2>/dev/null || true
 # .env tiene los secretos: solo el dueño
