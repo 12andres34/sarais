@@ -59,6 +59,8 @@ openssl verify -CAfile "$CERT_DIR/ca.pem" "$CERT_DIR/server-cert.pem" >/dev/null
 # 4) Permisos mínimos
 chmod 755 "$CERT_DIR"; chmod 700 "$CA_DIR"
 chmod 644 "$CERT_DIR/ca.pem" "$CERT_DIR/server-cert.pem"
+# La carpeta hereda el grupo "sarais" (setgid): los certificados públicos quedan de root
+chown root:root "$CERT_DIR/ca.pem" "$CERT_DIR/server-cert.pem"
 chmod 600 "$CERT_DIR/server-key.pem" "$CA_DIR/ca-key.pem"
 chown "$MYSQL_UID:$MYSQL_UID" "$CERT_DIR/server-key.pem"
 chown -R root:root "$CA_DIR"
