@@ -158,7 +158,7 @@ h2 { font-size: 1.05rem; color: var(--primary-dark); margin: 0 0 0.75rem; }
 .inline { display: inline; }
 
 input[type="text"], input[type="password"], input[type="email"], input[type="number"],
-input[type="date"], select {
+input[type="date"], input[type="file"], select {
   font: inherit;
   font-weight: normal;
   padding: 0.6rem 0.75rem;

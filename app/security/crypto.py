@@ -93,9 +93,12 @@ def encrypt_document(data: bytes) -> str:
         raise RuntimeError(f"DOCUMENTS_DIR no existe: {docs_dir}")
 
     # --trust-model always: la llave se fija por huella (fingerprint) en DOCS_GPG_RECIPIENT
+    # --auto-key-locate clear,local: solo el llavero local. Sin esto, si falta la llave,
+    # gpg la busca en Internet (WKD) y revela el destinatario.
     cmd = [
         "gpg", "--batch", "--no-tty", "--quiet", "--yes",
         "--trust-model", "always",
+        "--auto-key-locate", "clear,local",
         "--recipient", recipient,
         "--encrypt", "--output", "-",
     ]

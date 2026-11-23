@@ -99,7 +99,17 @@ GPG usa `/srv/.gnupg`, que es el `HOME` del usuario `sarais` en la imagen. La ap
 docker cp docs_pub.asc sarais_app:/tmp/ && docker exec sarais_app gpg --import /tmp/docs_pub.asc
 ```
 
-> La subida de documentos (ruta, formulario y `document_metadata`) sigue pendiente en la app. Ya existen `encrypt_document` y la acción `document_uploaded`.
+**Subida en la app (`/documents`, chat 7).** Flujo de `routers/documents.py` → `services/document_service.py`:
+
+1. Rol `admin` o `teacher` (si no, 403). El docente solo elige estudiantes activos de **sus** grupos y solo los tipos `MEDICAL_EXCUSE`, `REPORT_CARD`, `OTHER`.
+2. Si `Content-Length` supera 10 MB + 64 KB → **413** sin leer el cuerpo. Nginx corta en 11 MB.
+3. Token CSRF del formulario `multipart/form-data` (`web.read_upload_form`, máximo 1 archivo).
+4. Validación del PDF: extensión `.pdf`, empieza con `%PDF-`, tiene `%%EOF` al final, no vacío, ≤ `MAX_DOCUMENT_BYTES`. **No** se confía en el `Content-Type` del navegador.
+5. `encrypt_document` (en un hilo aparte: `run_in_threadpool`) → `documents/<uuid>.gpg`.
+6. `document_metadata`: `type`, `upload_date`, `uploader_id`, `student_ref`, `storage_path`. **Nada más** (el validador tiene `additionalProperties: false`). El nombre original del archivo no se guarda.
+7. Si Mongo falla, se borra el `.gpg` recién creado. Todo intento (éxito o fallo) queda en `audit_logs` como `document_uploaded` con `student_id`, `doc_type`, `storage_path`, `size_bytes` o `reason`.
+
+La app **no ofrece descarga**: no tiene la llave privada. Para leer un documento, el operador copia el `.gpg` a su equipo y lo descifra allí (`gpg -d archivo.gpg > archivo.pdf`).
 
 ### 2.3 Secreto MFA (AES-256-GCM)
 

@@ -49,7 +49,10 @@ Host: `localhost` en desarrollo (con Nginx: `sudo ./scripts/gen_certs.sh localho
 | 3.2 | Tabla nueva cifrada por defecto | Como root: `CREATE TABLE sarais.t_enc (id INT); SELECT CREATE_OPTIONS FROM information_schema.TABLES WHERE TABLE_NAME='t_enc'; DROP TABLE sarais.t_enc;` | `ENCRYPTION='Y'` sin haberlo escrito |
 | 3.3 | El `.ibd` no tiene texto legible | 1) Copia un apellido sintético de `students`. 2) `docker exec mysql_db grep -c "<Apellido>" /var/lib/mysql/sarais/students.ibd` | `0` |
 | 3.4 | Secreto MFA cifrado | `SELECT username, LENGTH(mfa_secret_encrypted), HEX(LEFT(mfa_secret_encrypted,1)) FROM users WHERE mfa_secret_encrypted IS NOT NULL;` | Largo `61`, primer byte `01` |
-| 3.5 | Documento cifrado (cuando exista la subida) | `docker exec sarais_app sh -c 'ls -l /srv/data/documents'` | Archivos `-rw-------` con nombre UUID `.gpg` |
+| 3.5 | Documento cifrado | Sube un PDF sintético en `/documents`. Luego `docker exec sarais_app sh -c 'ls -l /srv/data/documents'` | Archivos `-rw-------` con nombre UUID `.gpg` |
+| 3.5b | El `.gpg` no tiene el PDF en claro | `docker exec sarais_app sh -c 'head -c 5 /srv/data/documents/*.gpg \| od -c \| head -3'` | No aparece `% P D F -` |
+| 3.5c | Metadatos sin datos personales | `docker exec mongo_db sh -c 'mongosh -u "$MONGO_APP_USER" -p "$MONGO_APP_PASSWORD" --authenticationDatabase sarais sarais --quiet --eval "db.document_metadata.find().sort({upload_date:-1}).limit(1)"'` | Solo `type`, `upload_date`, `uploader_id`, `student_ref`, `storage_path` |
+| 3.5d | Rechazo de un archivo falso | Renombra un `.txt` a `.pdf` y súbelo | Aviso "no es un PDF válido"; en `/admin/audit`, `document_uploaded` Fallo con `reason=not_pdf` |
 | 3.6 | La app no puede descifrar | `docker exec sarais_app gpg --list-secret-keys` | Vacío: solo hay llave pública |
 
 ## 4. Roles y permisos

@@ -2,7 +2,7 @@
 # preflight.sh - Revisión ANTES de "docker compose up" en la VM. Solo lee, no cambia nada.
 # Uso:  sudo ./scripts/preflight.sh       (sudo: las carpetas de llaves solo las ve root)
 # Evita los fallos ya vividos: ca.pem convertido en carpeta, .env con \r, override activo,
-# llaves con dueño o permisos equivocados, llave GPG de backups sin importar.
+# llaves con dueño o permisos equivocados, llaves GPG sin importar, CPU sin AVX.
 set -uo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
@@ -86,6 +86,23 @@ echo "== 6. Carpetas del sistema (setup_users.sh) =="
 echo "== 7. Docker =="
 systemctl is-active --quiet docker && ok "servicio docker activo" || bad "docker no está activo"
 docker compose version >/dev/null 2>&1 && ok "$(docker compose version)" || bad "falta el plugin docker compose"
+# MongoDB 7 exige AVX. Con Hyper-V encendido en Windows, VirtualBox lo esconde (riesgo R24)
+grep -qw avx /proc/cpuinfo && ok "la CPU virtual tiene AVX (MongoDB 7)" \
+  || bad "sin AVX: mongo_db no arrancará. En Windows: bcdedit /set hypervisorlaunchtype off + reiniciar"
+
+echo "== 8. GPG de documentos (dentro de sarais_app, volumen app_gnupg) =="
+docs_rcp="$(grep -E '^DOCS_GPG_RECIPIENT=' .env 2>/dev/null | cut -d= -f2-)"
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx sarais_app; then
+  if [[ -n "$docs_rcp" ]] && docker exec sarais_app gpg --batch --list-keys "$docs_rcp" >/dev/null 2>&1; then
+    ok "llave pública de documentos '$docs_rcp' importada en sarais_app"
+  else
+    bad "falta la llave de documentos en sarais_app: docker exec -i sarais_app gpg --batch --import < ~/keys/docs_pub.asc"
+  fi
+  docker exec sarais_app gpg --batch --list-secret-keys 2>/dev/null | grep -q . \
+    && bad "sarais_app tiene llaves PRIVADAS (solo debe tener la pública)" || ok "sarais_app sin llaves privadas"
+else
+  echo "  [--]   sarais_app no está corriendo (se revisa después del primer up)"
+fi
 
 echo; echo "Resultado: $pass PASS, $fail FAIL"
 (( fail == 0 )) && echo "Listo para: docker compose up -d --build (como $OPS_USER)"

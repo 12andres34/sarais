@@ -31,7 +31,7 @@ Alineado con **ISO/IEC 27001:2022**: la cláusula 6.1.2 (valoración de riesgos)
 | A2 | Notas y asistencia | Información | 4 | 5 | 4 | MySQL |
 | A3 | Credenciales: hashes Argon2 y secretos MFA cifrados | Información | 5 | 4 | 3 | MySQL |
 | A4 | Registro de auditoría | Información | 3 | 5 | 3 | MongoDB `audit_logs` |
-| A5 | Documentos de estudiantes (`.gpg`) | Información | 5 | 4 | 3 | Volumen `documents` |
+| A5 | Documentos de estudiantes (`.gpg`) y sus metadatos | Información | 5 | 4 | 3 | Volumen `app_documents` + MongoDB `document_metadata` |
 | A6 | Backups cifrados | Información | 5 | 4 | 5 | `backups/` en la VM |
 | A7 | Llave maestra de MySQL (keyring) | Llave | 5 | 5 | 5 | Volumen `mysql_keyring` |
 | A8 | Llave privada GPG | Llave | 5 | 5 | 5 | Fuera de la VM (operador) |
@@ -71,7 +71,10 @@ I = impacto, P = probabilidad, R = riesgo. "Inh." = inherente, "Res." = residual
 | **R20** | A3 | Reutilización de un código MFA visto por otro | Código válido 30–90 s | 3 | 2 | **6** Medio | Cada código sirve **una sola vez** (`verify_totp`) (A.8.5) | 3 | 1 | **3** Bajo⁷ |
 | **R22** | A4 | Eventos de auditoría perdidos | Esquema del validador distinto al de la app (MAYÚSCULAS/`source_ip`) — **hallado en esta revisión** | 4 | 5 | **20** Crítico | Validador v2 alineado; prueba que compara `AuditAction.ALL` con el enum; respaldo `AUDIT_FALLBACK` en el log (A.8.15) | 4 | 1 | **4** Bajo |
 | **R23** | A4 | IP falsificada en la auditoría | Nginx agregaba (`$proxy_add_x_forwarded_for`) la IP enviada por el cliente y uvicorn confía en todo (`*`) — **hallado en esta revisión** | 3 | 3 | **9** Medio | Nginx reemplaza la cabecera con `$remote_addr`; el puerto de la app no se publica en la VM (A.8.15, A.8.20) | 3 | 1 | **3** Bajo |
-| **R21** | A13 | Denegación de servicio | Un solo servidor | 3 | 2 | **6** Medio | `limit_req`; límite de tamaño de subida (10 MB); `restart: unless-stopped` (A.8.6) | 3 | 2 | **6** Medio (aceptado) |
+| **R21** | A13 | Denegación de servicio | Un solo servidor | 3 | 2 | **6** Medio | `limit_req`; límite de subida (10 MB en la app, 11 MB en Nginx, 413 antes de leer el cuerpo); `restart: unless-stopped` (A.8.6) | 3 | 2 | **6** Medio (aceptado) |
+| **R24** | A13, A11 | **VM sin servicio por conflicto Hyper-V / AVX** (hallado en el despliegue) | El mismo PC usa WSL2/Docker Desktop (Hyper-V encendido) y VirtualBox. Con Hyper-V activo la CPU virtual no tiene AVX y MongoDB 7 no arranca → sin auditoría, sin documentos, la app no inicia. Cambiar Hyper-V puede pedir la llave de recuperación de BitLocker | 3 | 4 | **12** Alto | Regla escrita: Hyper-V **apagado** para la VM (`bcdedit /set hypervisorlaunchtype off`), **encendido** para WSL (`auto`); revisar BitLocker antes; `preflight.sh` falla si no hay AVX; cambios de código en una sola tanda con Hyper-V encendido y una sola actualización de la VM (A.5.30, A.8.9) | 3 | 2 | **6** Medio⁸ |
+| **R25** | A3, A4 | **Cambio de contraseñas fuera de la app, sin auditoría** (hallado en el despliegue) | Quien está en el grupo `docker` puede usar `docker exec` y escribir en `users` directo (se hizo un rehash de todas las cuentas cuando se olvidó la contraseña demo). Ese cambio no pasa por la app → no queda evento en `audit_logs` | 4 | 3 | **12** Alto | Solo 2 usuarios en `docker` (R11); SSH con llaves; el procedimiento quedó documentado en `despliegue_paso_a_paso.md`; regla: todo cambio manual se anota en una bitácora con fecha, quién y por qué (A.5.18, A.8.15, A.8.2) | 4 | 2 | **8** Medio⁹ |
+| **R26** | A5, A11 | Archivo malicioso subido como "PDF" | La subida acepta archivos de docentes y admin | 3 | 2 | **6** Medio | Solo admin/docente; CSRF; extensión `.pdf` + firma `%PDF-` + `%%EOF`; tamaño máximo; el archivo **nunca se abre ni se interpreta** en el servidor, se cifra al instante; nombre UUID (sin rutas del usuario) (A.8.28, A.8.7) | 3 | 1 | **3** Bajo¹⁰ |
 
 ### Notas del riesgo residual
 
@@ -82,6 +85,9 @@ I = impacto, P = probabilidad, R = riesgo. "Inh." = inherente, "Res." = residual
 5. **R13:** si `.env` alguna vez estuvo en un commit, **sigue en el historial**. Hay que **cambiar todas las contraseñas y llaves**; borrarlo del índice no basta. En la VM se usan valores distintos a los de desarrollo.
 6. **R14:** se reduciría con Docker secrets o un gestor de secretos (Vault).
 7. **R20:** el registro de códigos usados vive en memoria (ver `security_design.md` §3).
+8. **R24:** es un riesgo del entorno académico (un solo PC para desarrollar y para la VM). En producción real el servidor sería una máquina o VM dedicada, sin Hyper-V compartido. Otra opción: MongoDB 4.4 (no exige AVX), descartada por estar fuera de soporte.
+9. **R25:** no se elimina mientras root o el grupo `docker` existan (igual que R11 y R12). Mitigación real: un *trigger* de MySQL en `users` que copie cada cambio de `password_hash` a una tabla de historial (registra también lo que haga root), o un `auditd` que registre cada `docker exec`.
+10. **R26:** la app no abre los PDF, pero **quien los descifre** fuera del servidor sí. Mitigación real: antivirus (ClamAV) antes de cifrar y abrir los PDF descifrados en un visor aislado.
 
 ## 4. Riesgos más altos después de los controles (plan)
 
@@ -92,6 +98,8 @@ I = impacto, P = probabilidad, R = riesgo. "Inh." = inherente, "Res." = residual
 | R12 | 10 | Envío de auditoría a un sistema externo; hashes encadenados |
 | R14 | 10 | Docker secrets o Vault; rotación de llaves |
 | R4, R16, R17 | 8 | Pruebas automáticas por rol; segunda copia de backup fuera del sitio; escaneo de imágenes (Trivy) |
+| R25 | 8 | Trigger de historial en `users`; `auditd` sobre `docker exec` |
+| R24 | 6 | Servidor dedicado (sin Hyper-V compartido) |
 
 ## 5. Declaración de aplicabilidad (resumen)
 

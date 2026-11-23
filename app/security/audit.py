@@ -24,7 +24,7 @@ AUDIT_ACTIONS = frozenset({
 # (nunca nombres, correos ni observaciones).
 _KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 _CODE_RE = re.compile(r"^[A-Za-z0-9_./-]{1,64}$")
-_TEXT_KEYS = frozenset({"reason", "role", "change", "status", "class_date", "storage_path"})
+_TEXT_KEYS = frozenset({"reason", "role", "change", "status", "class_date", "storage_path", "doc_type"})
 _MAX_DETAILS = 10
 
 

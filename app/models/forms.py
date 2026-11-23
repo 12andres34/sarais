@@ -100,6 +100,15 @@ class ClassDateForm(FormModel):
         return value
 
 
+DocType = Literal["ENROLLMENT_FORM", "REPORT_CARD", "ID_DOCUMENT", "MEDICAL_EXCUSE", "OTHER"]
+
+
+class DocumentUploadForm(FormModel):
+    """Campos de texto del formulario de subida (el archivo se valida aparte)."""
+    student_id: int = Field(gt=0)
+    doc_type: DocType
+
+
 class AuditFilter(FormModel):
     action: str | None = None
     user_id: int | None = Field(default=None, gt=0)

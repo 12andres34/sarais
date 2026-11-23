@@ -17,13 +17,16 @@ C = crear · R = leer · U = actualizar · — = sin acceso. **Nadie borra desde
 | `attendance` | — | C R U (sus asignaciones, periodo abierto) | R (la suya) | ídem |
 | Vista `v_report_card` (boletín) | — | — | R (el suyo) | `/student` |
 | `students`, `guardians`, `subjects`, `class_groups`, `periods` | Carga por `dml.sql`/`seed_data.py` (sin pantallas) | R (sus estudiantes, en listas) | R (sus datos) | — |
-| Documentos (`document_metadata` + `.gpg`) | Pendiente en la app | Pendiente | — | `encrypt_document` listo |
+| Documentos PDF: subir (cifrado `.gpg` + `document_metadata`) | C (todos los tipos, cualquier estudiante activo) | C (solo `MEDICAL_EXCUSE`, `REPORT_CARD`, `OTHER`; solo estudiantes activos de **sus** grupos) | — | `/documents`, `document_service.ensure_*` |
+| Documentos: lista | R (todos) | R (solo los que **él** subió) | — | `document_service.list_documents` |
+| Documentos: abrir / descargar | — (la app solo tiene la llave **pública**) | — | — | Se descifra fuera del servidor con la llave privada (operador) |
 
 **Decisiones:**
 
 - **Control por objeto, en el servidor.** El docente no ve "todas las notas". Cada consulta filtra por el `teacher_id` **de la sesión**, nunca por uno que venga del formulario (`teacher_service.py`, línea 2). El estudiante usa su `student_id` de la sesión. Si alguien cambia el ID en la URL, recibe 403/404, nunca datos ajenos. Este ataque se llama IDOR. Lo prueba `app/tests/test_authorization.py`.
 - **Separación de funciones.** El admin **no** cambia notas; solo el docente asignado. Cada cambio de nota tiene un responsable claro en `audit_logs` (`grade_change`).
-- **Acudientes:** hoy no tienen cuenta (decisión pendiente). Si se agregan, sería un rol `guardian` de solo lectura sobre los estudiantes vinculados en `student_guardians`.
+- **Documentos.** Nadie borra ni reemplaza un documento desde la app. El nombre del archivo en disco es un UUID; el nombre original **no se guarda** (podría tener datos personales). Si Mongo falla después de cifrar, el `.gpg` se borra para no dejar huérfanos.
+- **Acudientes:** fuera del alcance de esta versión. Ver §5.
 
 ## 2. Cuentas de bases de datos
 
@@ -94,3 +97,28 @@ Los revisa `scripts/check_permissions.sh` (`--fix` corrige solo con `chmod`).
 ### `.gitignore` corregido
 
 Las líneas `   .env`, `   backups/` y `   certs/` tenían **espacios al inicio**. Git las trata como otro patrón, así que **no ignoraban nada**. `.env` sí quedaba ignorado gracias a otra línea sin espacios; `certs/` no. Ahora además se ignoran `*-key.pem`, `docker/mysql/certs/*` y `docker/mysql/ca-private/`.
+
+## 5. Trabajo futuro: acudientes (rol `guardian`)
+
+**Decisión:** en esta versión los acudientes **no tienen cuenta**. Sus datos existen en MySQL (`guardians`, `student_guardians`), pero solo los carga el administrador.
+
+**Por qué quedó fuera:**
+- Cada rol nuevo agrega pantallas, pruebas y casos de IDOR (un acudiente con varios hijos, hijos de distintos acudientes).
+- Hoy el estudiante ya ve su boletín y su asistencia. El valor extra no justificaba el riesgo en un proyecto de un semestre.
+- La Ley 1581 pide autorización y finalidad claras para datos de menores. Abrir el acceso a terceros exige revisar el consentimiento (`docs/legal/consentimiento_informado.md`).
+
+**Diseño propuesto (no implementado):**
+
+| Paso | Cambio |
+|---|---|
+| 1. Base de datos | Agregar `'guardian'` al `CHECK` de `roles` y una fila en `roles`. Agregar `guardians.user_id` (NULL, `UNIQUE`, FK a `users`), igual que `students.user_id`. |
+| 2. Autorización | `GUARDIAN = require_role("guardian")`. Cada consulta filtra por los estudiantes de `student_guardians` donde `guardian_id` = el de la **sesión**. Nunca un `student_id` de la URL sin comprobar el vínculo. |
+| 3. Pantallas | Solo lectura: boletín (`v_report_card`) y asistencia de sus estudiantes. Sin notas por editar ni documentos. |
+| 4. Seguridad | MFA obligatorio como los demás roles. Nuevas acciones de auditoría (`guardian_view`) solo con IDs. |
+| 5. Pruebas | Un acudiente no ve estudiantes no vinculados (IDOR); con dos hijos ve ambos; con el vínculo borrado pierde el acceso. |
+
+| Recurso | guardian (futuro) |
+|---|---|
+| Boletín y asistencia de **sus** estudiantes | R |
+| Datos de otros estudiantes, notas por editar, documentos, auditoría | — |
+

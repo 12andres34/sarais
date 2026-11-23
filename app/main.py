@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app import security
 from app.config import get_settings
-from app.routers import admin, auth, pages, student, teacher
+from app.routers import admin, auth, documents, pages, student, teacher
 from app.web import BASE_DIR, render_error
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -29,6 +29,7 @@ ERROR_TITLES = {
     403: ("Acceso denegado", "No tienes permiso para realizar esta acción."),
     404: ("Página no encontrada", "La dirección no existe."),
     405: ("Método no permitido", "Esta acción no está disponible."),
+    413: ("Archivo demasiado grande", "El archivo supera el tamaño máximo permitido."),
 }
 
 
@@ -88,6 +89,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(teacher.router)
     app.include_router(student.router)
+    app.include_router(documents.router)
     return app
 
 

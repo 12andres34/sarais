@@ -26,14 +26,31 @@ def get_csrf_token(request: Request) -> str:
     return token
 
 
-async def read_form(request: Request) -> dict[str, str]:
-    """Lee un formulario POST y verifica el token CSRF. Úsala en TODOS los POST."""
-    form = await request.form()
-    sent = form.get(CSRF_KEY)
+def _check_csrf(request: Request, sent) -> None:
     expected = request.session.get(CSRF_KEY)
     if not expected or not isinstance(sent, str) or not secrets.compare_digest(sent, expected):
         raise HTTPException(status_code=403, detail="Token CSRF inválido. Recarga la página e intenta de nuevo.")
+
+
+async def read_form(request: Request) -> dict[str, str]:
+    """Lee un formulario POST y verifica el token CSRF. Úsala en TODOS los POST."""
+    form = await request.form()
+    _check_csrf(request, form.get(CSRF_KEY))
     return {k: v for k, v in form.multi_items() if isinstance(v, str) and k != CSRF_KEY}
+
+
+async def read_upload_form(request: Request, max_files: int = 1, max_fields: int = 10):
+    """Igual que read_form, pero para multipart/form-data con archivos.
+    Devuelve (campos_de_texto, formulario). Quien llama DEBE cerrar: await form.close()"""
+    # max_files / max_fields: límites del parser de Starlette (evitan abuso del formulario)
+    form = await request.form(max_files=max_files, max_fields=max_fields)
+    try:
+        _check_csrf(request, form.get(CSRF_KEY))
+    except HTTPException:
+        await form.close()  # borra el archivo temporal antes de rechazar
+        raise
+    data = {k: v for k, v in form.multi_items() if isinstance(v, str) and k != CSRF_KEY}
+    return data, form
 
 
 # ---------- Mensajes flash ----------

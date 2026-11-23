@@ -6,7 +6,6 @@ import base64
 import os
 import re
 import secrets
-import shutil
 import stat
 import subprocess
 
@@ -176,25 +175,7 @@ def test_hex_key_accepted(monkeypatch):
 
 
 # ---------------- GPG ----------------
-@pytest.fixture
-def gpg_env(tmp_path, monkeypatch):
-    if shutil.which("gpg") is None:
-        pytest.skip("gpg no instalado")
-    home = tmp_path / "gnupg"
-    home.mkdir(mode=0o700)
-    docs = tmp_path / "documents"
-    docs.mkdir()
-    monkeypatch.setenv("GNUPGHOME", str(home))
-    monkeypatch.setenv("DOCUMENTS_DIR", str(docs))
-    subprocess.run(["gpg", "--batch", "--passphrase", "", "--quick-gen-key",
-                    "SARAIS Test <test@example.invalid>", "default", "default", "never"],
-                   check=True, capture_output=True)
-    out = subprocess.run(["gpg", "--batch", "--with-colons", "--list-keys"],
-                         check=True, capture_output=True, text=True).stdout
-    fpr = next(l.split(":")[9] for l in out.splitlines() if l.startswith("fpr"))
-    monkeypatch.setenv("DOCS_GPG_RECIPIENT", fpr)
-    yield docs
-    subprocess.run(["gpgconf", "--kill", "gpg-agent"], capture_output=True)
+# El fixture gpg_env está en conftest.py (lo usa también test_documents.py)
 
 
 def test_encrypt_document(gpg_env):
@@ -213,6 +194,17 @@ def test_encrypt_document(gpg_env):
 
 def test_encrypt_document_unique_names(gpg_env):
     assert encrypt_document(b"a") != encrypt_document(b"a")
+
+
+def test_encrypt_document_never_looks_up_keys_online(gpg_env, monkeypatch):
+    # Llave inexistente: debe fallar con "No public key", sin intentar WKD (Internet)
+    monkeypatch.setenv("LC_ALL", "C")  # mensajes de gpg en inglés aunque WSL esté en español
+    monkeypatch.setenv("DOCS_GPG_RECIPIENT", "no-existe@example.invalid")
+    with pytest.raises(RuntimeError) as exc:
+        encrypt_document(b"%PDF-1.4 x")
+    assert "No public key" in str(exc.value)
+    assert "WKD" not in str(exc.value)
+    assert list(gpg_env.iterdir()) == []
 
 
 def test_encrypt_document_empty_rejected(gpg_env):

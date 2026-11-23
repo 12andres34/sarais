@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Documentos{% endblock %}
+{% block content %}
+<h1>Documentos</h1>
+<p class="muted">Los PDF se cifran con GPG al subirlos. El servidor solo tiene la llave pública: no puede abrirlos.</p>
+
+<section class="card">
+  <h2>Subir documento</h2>
+  {% if students %}
+  <form method="post" action="/documents" enctype="multipart/form-data" class="form grid-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Estudiante
+      <select name="student_id" required>
+        {% for s in students %}
+        <option value="{{ s.student_id }}">{{ s.last_name }} {{ s.first_name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Tipo
+      <select name="doc_type" required>
+        {% for code, label in doc_types %}
+        <option value="{{ code }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Archivo PDF (máx. {{ max_mb }} MB)
+      <input type="file" name="document" accept="application/pdf,.pdf" required>
+    </label>
+    <div class="form-end"><button type="submit" class="btn">Cifrar y subir</button></div>
+  </form>
+  {% else %}
+  <p class="muted">No hay estudiantes activos a los que puedas asociar documentos.</p>
+  {% endif %}
+</section>
+
+{% if mongo_error %}<div class="alert alert-error">{{ mongo_error }}</div>{% endif %}
+
+<section class="card">
+  <h2>{% if is_admin %}Documentos subidos{% else %}Documentos que subiste{% endif %}</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th>Fecha</th><th>Tipo</th><th>Estudiante</th>
+      {% if is_admin %}<th>Subido por</th>{% endif %}
+      <th>Archivo cifrado</th>
+    </tr></thead>
+    <tbody>
+    {% for d in documents %}
+      <tr>
+        <td>{{ d.uploaded_at }}</td>
+        <td>{{ d.type_label }}</td>
+        <td>{{ d.student_name }}</td>
+        {% if is_admin %}<td>{{ d.uploader }}</td>{% endif %}
+        <td class="small"><code>{{ d.storage_path }}</code></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" class="muted">Aún no hay documentos.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

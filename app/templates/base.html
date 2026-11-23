@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Inicio{% endblock %} · SARAIS</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=3">
+  <link rel="stylesheet" href="/static/css/style.css?v=4">
   <link rel="icon" href="/static/img/escudo.png">
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -39,9 +39,11 @@
           <a href="/admin" {% if path == '/admin' %}class="active"{% endif %}>Inicio</a>
           <a href="/admin/users" {% if path.startswith('/admin/users') %}class="active"{% endif %}>Usuarios</a>
           <a href="/admin/enrollments" {% if path.startswith('/admin/enrollments') %}class="active"{% endif %}>Matrículas</a>
+          <a href="/documents" {% if path.startswith('/documents') %}class="active"{% endif %}>Documentos</a>
           <a href="/admin/audit" {% if path.startswith('/admin/audit') %}class="active"{% endif %}>Auditoría</a>
         {% elif current_user.role == 'teacher' %}
           <a href="/teacher" {% if path.startswith('/teacher') %}class="active"{% endif %}>Mis grupos</a>
+          <a href="/documents" {% if path.startswith('/documents') %}class="active"{% endif %}>Documentos</a>
         {% elif current_user.role == 'student' %}
           <a href="/student" {% if path == '/student' %}class="active"{% endif %}>Boletín</a>
           <a href="/student/attendance" {% if path.startswith('/student/attendance') %}class="active"{% endif %}>Asistencia</a>

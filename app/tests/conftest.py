@@ -12,6 +12,8 @@ os.environ.update({
 })
 
 import re  # noqa: E402
+import shutil  # noqa: E402
+import subprocess  # noqa: E402
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -79,3 +81,25 @@ def extract_csrf(html: str) -> str:
     match = re.search(r'name="csrf_token" value="([^"]+)"', html)
     assert match, "La página no tiene token CSRF"
     return match.group(1)
+
+
+@pytest.fixture
+def gpg_env(tmp_path, monkeypatch):
+    """Keyring GPG temporal con una llave de PRUEBA y carpeta de documentos temporal."""
+    if shutil.which("gpg") is None:
+        pytest.skip("gpg no instalado")
+    home = tmp_path / "gnupg"
+    home.mkdir(mode=0o700)
+    docs = tmp_path / "documents"
+    docs.mkdir()
+    monkeypatch.setenv("GNUPGHOME", str(home))
+    monkeypatch.setenv("DOCUMENTS_DIR", str(docs))
+    subprocess.run(["gpg", "--batch", "--passphrase", "", "--quick-gen-key",
+                    "SARAIS Test <test@example.invalid>", "default", "default", "never"],
+                   check=True, capture_output=True)
+    out = subprocess.run(["gpg", "--batch", "--with-colons", "--list-keys"],
+                         check=True, capture_output=True, text=True).stdout
+    fpr = next(line.split(":")[9] for line in out.splitlines() if line.startswith("fpr"))
+    monkeypatch.setenv("DOCS_GPG_RECIPIENT", fpr)
+    yield docs
+    subprocess.run(["gpgconf", "--kill", "gpg-agent"], capture_output=True)
