@@ -3,7 +3,9 @@
 2) Crea cuentas demo (admin.demo, docente.demo, estudiante.demo) si falta algún rol.
 
 Uso (desde la raíz del repo, con los contenedores arriba):
-  docker compose exec -e SEED_PASSWORD='UnaClaveDemoLarga2026' app python -m app.scripts.seed_data
+  read -rs -p "Contraseña demo: " SEED_PASSWORD; echo; export SEED_PASSWORD
+  docker compose exec -e SEED_PASSWORD app python -m app.scripts.seed_data
+  unset SEED_PASSWORD
 La contraseña NUNCA va en el código: llega por variable de entorno.
 """
 import argparse

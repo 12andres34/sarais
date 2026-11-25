@@ -1,6 +1,6 @@
 # SARAIS – Despliegue en la VM (paso a paso, en orden)
 
-Guía para desplegar SARAIS en la VM Ubuntu Server 22.04. Sigue los pasos **en orden**: cada uno tiene un **"Compruébalo"**. Si un "Compruébalo" falla, no sigas: revisa la sección 11 (problemas comunes).
+Guía para desplegar SARAIS en la VM Ubuntu Server 22.04. Sigue los pasos **en orden**: cada uno tiene un **"Compruébalo"**. Si un "Compruébalo" falla, no sigas: revisa la sección 11 y `docs/troubleshooting.md`.
 
 - `WSL$` = terminal Ubuntu de WSL2 en tu PC (`~/proyecto_integrador`).
 - `PS>` = PowerShell de Windows.
@@ -27,31 +27,15 @@ Resumen del orden y por qué:
 
 ## 0. Antes de empezar (en WSL)
 
-Este chat agregó y corrigió archivos. Cópialos al repo y súbelos:
-
-| Archivo | Cambio |
-|---|---|
-| `scripts/gen_env.sh` | **Nuevo.** Crea el `.env` de la VM con secretos nuevos, sin nano. Valida `\r`, caracteres raros, permisos y que solo se publique el 443 |
-| `scripts/preflight.sh` | **Nuevo.** Revisión antes del primer `compose up` (certificados, dueños, `ca.pem` como carpeta, GPG, `.env`) |
-| `scripts/metrics_report.py` | **Nuevo.** Tabla (Markdown, en inglés) y gráfica PNG desde el CSV de `monitor.sh` |
-| `docker-compose.yaml` | Volumen `app_gnupg` en `/srv/.gnupg`: sin él, la llave pública de documentos se pierde cada vez que se recrea `sarais_app` |
-| `scripts/linux/setup_users.sh` | Ya no hace `chown -R`/`chmod -R` sobre las llaves ni el `.env`. Antes, si lo repetías después de crear los certificados, dejaba `server-key.pem` en `644` y con dueño equivocado |
-| `.gitattributes` | **Nuevo.** Fuerza finales de línea LF en `.sh`, `.yaml`, `.sql`, `.env*`… |
-| `.gitignore` | Agrega `*.zip` |
-
-En la raíz del repo había **dos .zip** (`sarais_repo.zip`, `sarais_repo_seguridad.zip`). Son copias viejas del código: no deben ir a Git.
+La VM solo recibe lo que está publicado en Git. Revisa que no vaya ningún secreto y publica:
 
 ```bash
 WSL$ cd ~/proyecto_integrador
-WSL$ git rm --cached --ignore-unmatch -q sarais_repo.zip sarais_repo_seguridad.zip
-WSL$ rm -f sarais_repo.zip sarais_repo_seguridad.zip
-WSL$ chmod +x scripts/gen_env.sh scripts/preflight.sh
-WSL$ git add --renormalize .          # aplica .gitattributes a lo que ya está en Git
-WSL$ git status                       # revisa la lista: no debe aparecer .env, .pem, .key ni .zip
-WSL$ git add -A && git commit -m "Despliegue VM: gen_env, preflight, metrics_report, volumen app_gnupg" && git push
+WSL$ git status --short               # no debe aparecer .env, .pem, .key ni .zip
+WSL$ git add -A && git commit -m "chore: preparar despliegue en la VM" && git push
 ```
 
-En desarrollo, el volumen nuevo se crea solo: `docker compose up -d` (sin `-v`).
+`.gitattributes` fuerza finales de línea LF en `.sh`, `.yaml`, `.sql` y `.env*`: un `\r` de Windows rompe los scripts y el `.env`.
 
 **Compruébalo:**
 ```bash
@@ -61,7 +45,7 @@ WSL$ git ls-files --eol scripts/*.sh | grep crlf                    # vacío
 
 > **Historial con `.env`:** el `.env` viejo sigue en el historial. En la VM usaremos secretos **nuevos**, así que no afecta al despliegue. Pero `check_permissions.sh` mostrará `[FAIL] .env aparece en el historial` (R13). Si el repositorio es **público**, límpialo con `git filter-repo` antes de entregar.
 
-### Qué debes poder explicar
+### Justificación técnica
 - Por qué `.gitattributes` evita que un `\r` rompa scripts y el `.env`.
 - Por qué borrar el `.env` del índice no basta (sigue en el historial) y qué hicimos (rotar secretos).
 
@@ -118,7 +102,7 @@ MongoDB 5.0 o superior necesita la instrucción **AVX**. Con Hyper-V activo (lo 
 ```bash
 VM$ grep -o -m1 -w avx /proc/cpuinfo      # debe imprimir: avx
 ```
-Si no imprime nada, Mongo morirá con `Illegal instruction` (código 132). Primero actualiza VirtualBox a la última 7.x y vuelve a probar. Si sigue sin AVX, avísame antes de seguir: la otra salida es desactivar Hyper-V, y eso apaga WSL2 y Docker Desktop mientras esté desactivado.
+Si no imprime nada, Mongo morirá con `Illegal instruction` (código 132). Primero actualiza VirtualBox a la última 7.x y vuelve a probar. Si sigue sin AVX, desactiva Hyper-V (`bcdedit /set hypervisorlaunchtype off` + reiniciar). Eso apaga WSL2 y Docker Desktop mientras esté desactivado (riesgo R24).
 
 ### 1.6 Docker Engine + plugin Compose (repositorio oficial)
 ```bash
@@ -141,7 +125,7 @@ VM$ systemctl is-enabled docker                # enabled (arranca con la VM)
 PS> ping 192.168.56.10                         # responde
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - Para qué sirve cada adaptador (NAT = salida a Internet; solo-anfitrión = Windows ↔ VM).
 - Por qué Docker Engine del repositorio oficial y no Docker Desktop ni el paquete `docker.io` de Ubuntu (versión actual y plugin compose v2; Desktop es para escritorio).
 - Por qué el reloj importa para TOTP (el código depende de la hora en ventanas de 30 s).
@@ -231,7 +215,7 @@ VM(ops)$ git pull                     # la 1.ª vez escribe "yes" para la huella
 ```
 **Compruébalo:** `git pull` dice `Already up to date.` sin pedir contraseña.
 
-### Qué debes poder explicar
+### Justificación técnica
 - Mínimo privilegio: qué puede hacer cada usuario y por qué el auditor **no** está en `docker` (grupo `docker` = root, riesgo R11).
 - Por qué solo llaves (no hay contraseña que adivinar) y por qué `harden_ssh.sh` valida con `sshd -t` antes de recargar.
 - Qué hace `ufw limit` (bloquea 6+ conexiones en 30 s) y por qué SSH solo desde `192.168.56.0/24`.
@@ -272,7 +256,7 @@ No muestres el `.env` en pantalla durante la sustentación.
 
 > Guarda una copia del `.env` de la VM **fuera** de la VM (gestor de contraseñas). Sin él, no podrás volver a levantar las bases con los volúmenes actuales.
 
-### Qué debes poder explicar
+### Justificación técnica
 - Por qué secretos distintos a desarrollo (el `.env` de desarrollo está en el historial de Git: R13).
 - Por qué contraseñas solo alfanuméricas (van dentro de SQL y de la URI de Mongo).
 - Qué pasa si cambias `APP_TOTP_ENC_KEY` (nadie puede descifrar su secreto MFA: todos deben registrar el QR de nuevo).
@@ -331,7 +315,7 @@ VM(ops)$ gpg --list-secret-keys             # VACÍO: en la VM no hay llaves pri
 VM(ops)$ ./scripts/gen_env.sh --check       # sigue válido
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - Cifrado asimétrico: con la pública se cifra, solo la privada descifra. Si roban la VM, los backups y documentos siguen ilegibles.
 - Por qué la **huella** y no el correo en `*_GPG_RECIPIENT` (otra llave con el mismo correo podría elegirse por error).
 - Por qué dos llaves (si se compromete una, la otra sigue segura; separación de usos).
@@ -358,7 +342,7 @@ VM(admin)$ sudo ls -l docker/nginx/certs docker/mysql/certs docker/mysql/ca-priv
 #  sarais.key 640 root:101 · server-key.pem 600 999:999 · ca-key.pem 600 root:root
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - Por qué Docker crea una **carpeta** `ca.pem` si el archivo no existe (un bind mount de una ruta inexistente se crea como directorio) y por qué entonces MySQL no arranca.
 - Por qué la llave de Nginx es del grupo 101 y la de MySQL del UID 999 (son los usuarios no root dentro de cada contenedor).
 - Por qué `ca-key.pem` no se monta en ningún contenedor (con ella se pueden firmar certificados falsos).
@@ -408,7 +392,7 @@ VM(admin)$ sudo ./scripts/check_permissions.sh     # solo 1 problema esperado: "
 VM(admin)$ sudo ss -tlnp | grep -E ':(22|443|3306|27017|8000)\b'   # solo :22 y :443
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - Qué hace `--build` y por qué los datos no se pierden con `up` (viven en volúmenes).
 - Por qué **nunca** `down -v` en la VM (borra `mysql_keyring` → datos cifrados irrecuperables).
 - Por qué el keyring debe estar en `600` (solo el usuario `mysql` lee la llave maestra).
@@ -475,7 +459,7 @@ WSL$ printf 'X' >> /tmp/x.tar.gz.gpg
 WSL$ ./scripts/restore.sh --yes /tmp/x.tar.gz.gpg      # "El checksum NO coincide" y termina con error
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - Qué contiene el backup (dump lógico de MySQL, `mongodump`, documentos ya cifrados, manifiesto con SHA-256) y por qué no depende del keyring.
 - Por qué nunca se escribe el `.tar` sin cifrar en disco (tubería `tar | gpg`).
 - Para qué sirve el `.sha256` (integridad) frente a GPG (confidencialidad).
@@ -491,19 +475,37 @@ WSL$ ./scripts/restore.sh --yes /tmp/x.tar.gz.gpg      # "El checksum NO coincid
 VM(ops)$ ls -l /var/log/sarais/metrics/
 VM(ops)$ tail -n 3 /var/log/sarais/metrics/metrics_$(date +%Y-%m).csv
 ```
-Deja la VM encendida **al menos 24 h** (288 mediciones) antes de sacar la tabla. Durante ese tiempo usa la app un rato (logins, notas, asistencia) para que haya actividad real.
+El cron sirve para el monitoreo continuo y las alertas. Para el **informe** se mide por **escenarios** cortos y repetibles, con una medición cada minuto (los lineamientos piden un reporte de recursos reproducible, no un tiempo mínimo):
+
+| Escenario | Duración | Qué se hace |
+|---|---|---|
+| Reposo | 30 min | Sistema encendido, sin usuarios |
+| Uso | 15 min | Logins con MFA, notas, asistencia, subida de PDF, auditoría |
+| Backup | lo que tarde | `time ./scripts/backup.sh` (tiempo y tamaño) |
+
+```bash
+VM(ops)$ cd /opt/sarais                      # IMPORTANTE: rutas relativas
+VM(ops)$ date; nohup bash -c 'for i in $(seq 30); do ./scripts/monitor.sh >/dev/null; sleep 60; done' >/dev/null 2>&1 &
+```
+Anota la hora de inicio y fin de cada escenario. Para uso, cambia `30` por `15`. `nohup` mantiene el ciclo aunque se cierre SSH.
+
+> Nota: suspender o hibernar el equipo congela la VM y deja huecos en las métricas. Por eso se mide con escenarios cortos y no con el equipo encendido 24 h (ver `docs/troubleshooting.md`).
 
 ### 8.2 Tabla y gráfica para el informe (en WSL)
 ```bash
 WSL$ cd ~/proyecto_integrador && source .venv/bin/activate
 WSL$ pip install matplotlib                      # solo la primera vez
 WSL$ mkdir -p ~/sarais_metrics docs/img
-WSL$ scp 'sarais_ops@192.168.56.10:/var/log/sarais/metrics/metrics_*.csv' ~/sarais_metrics/
-WSL$ python3 scripts/metrics_report.py ~/sarais_metrics/metrics_*.csv --png docs/img/vm_metrics.png
+PS > scp -i $env:USERPROFILE\.ssh\id_ed25519 "sarais_ops@192.168.56.10:/var/log/sarais/metrics/metrics_*.csv" $env:USERPROFILE\Downloads\
+WSL$ cp /mnt/c/Users/<usuario>/Downloads/metrics_*.csv ~/sarais_metrics/ && chmod 600 ~/sarais_metrics/*
+WSL$ CSV=~/sarais_metrics/metrics_2026-11.csv
+WSL$ python3 scripts/metrics_report.py $CSV --since 2026-11-25T09:45 --until 2026-11-25T10:15 --png docs/img/vm_metrics_idle.png  | tee docs/img/metrics_idle.md
+WSL$ python3 scripts/metrics_report.py $CSV --since 2026-11-25T10:21 --until 2026-11-25T10:36 --png docs/img/vm_metrics_usage.png | tee docs/img/metrics_usage.md
+WSL$ python3 scripts/metrics_report.py $CSV --since 2026-11-25T09:45 --until 2026-11-25T10:36 --png docs/img/vm_metrics.png       | tee docs/img/metrics_all.md
 ```
 - La **tabla** sale en Markdown y en inglés (min, promedio, p95, máximo de CPU, RAM, disco, carga, procesos; % de mediciones con los 4 contenedores sanos; alertas). Pégala en el informe IEEE.
 - La **gráfica** tiene 3 paneles (CPU, RAM, disco) con la misma escala 0–100 % y la línea del umbral de alerta (85 %).
-- Para un intervalo concreto: `--since 2026-11-18T08:00 --until 2026-11-19T08:00`.
+- Las horas son las de los escenarios medidos el 25-nov (ver `docs/evidence/README.md`). Con Hyper-V apagado WSL no funciona: el `scp` se hace desde PowerShell.
 
 ### 8.3 Medición en vivo (sustentación)
 Sesión SSH 1, línea base:
@@ -529,7 +531,7 @@ VM(ops)$ docker stop mongo_db; ./scripts/monitor.sh | cut -d, -f18,19; docker st
 #  stopped,ALERT:mongo
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - De dónde sale cada métrica (`/proc/stat` con dos lecturas a 1 s, `/proc/meminfo` con `MemAvailable`, `df`, `ps`, `docker inspect` del healthcheck).
 - Por qué un CSV por mes y por qué `cleanup.sh` lo comprime a los 35 días y lo borra a los 90.
 - Qué es el p95 (el 95 % de las mediciones está por debajo: ignora picos aislados).
@@ -540,7 +542,7 @@ VM(ops)$ docker stop mongo_db; ./scripts/monitor.sh | cut -d, -f18,19; docker st
 ## 9. Pruebas en la VM y evidencias
 
 ### 9.1 Las 21 pruebas de infraestructura
-Están en `docs/infrastructure_guide.md` §5. Ya hiciste varias en los pasos anteriores; córrelas todas de nuevo en orden para las capturas. Ajustes para la VM:
+Están en `docs/infrastructure_guide.md` §5. Córrelas todas en orden para las capturas. Ajustes para la VM:
 
 | # | Nota |
 |---|---|
@@ -557,12 +559,12 @@ Cambia `localhost` por `127.0.0.1` cuando corras dentro de la VM, o por `192.168
 
 | Sección | Dónde | Nota |
 |---|---|---|
-| 0.1 pytest | **WSL** | En la VM no hay entorno de desarrollo; es evidencia del código (87 PASS) |
+| 0.1 pytest | **WSL** | En la VM no hay entorno de desarrollo; es evidencia del código (116 PASS, 1 skip) |
 | 0.2, 0.5 | VM | `verify_encryption.sh` (ops) y `sudo check_permissions.sh` (admin; 1 problema esperado: historial) |
 | 0.3, 0.4 | VM | Comandos en la cabecera de cada `.js` y en `db/mongo/README.md` |
 | 1.x TLS | VM | 1.5 dentro de la VM: `curl -m 3 http://127.0.0.1` → `Connection refused`. Desde Windows el 80 da **tiempo agotado** (UFW descarta): también es válido |
 | 2.x MySQL | VM | 2.8 (Workbench) **no aplica**: en la VM el 3306 no se publica. Esa es la prueba 4 de infraestructura |
-| 3.x reposo | VM | 3.5 cuando exista la subida de documentos |
+| 3.x reposo | VM | 3.5 a 3.5d: sube primero un PDF sintético en `/documents` |
 | 4–6 roles, MFA, bloqueo | Navegador en Windows | `https://192.168.56.10` |
 | 6.4 limit_req | VM | `for i in $(seq 12); do curl -sk -o /dev/null -w "%{http_code}\n" -d "username=x&password=y" https://127.0.0.1/login; done` → aparecen `503` |
 | 7.2 IP real | Navegador | En `/admin/audit` la IP debe ser `192.168.56.1` (Windows), no `172.x` |
@@ -607,8 +609,16 @@ Nombra cada archivo con el número de prueba, por ejemplo `INF-07_tablas_cifrada
 | E32 | `ALERT:CPU` y `ALERT:mongo` | Alertas del monitoreo |
 | E33 | Auditor: lee el log, `docker ps` y `.env` denegados | Separación de funciones |
 | E34 | `docker inspect ... grep -c KEY` | Evidencia del riesgo R11/R14 (aceptado) |
+| E35 | `ls -l` de `/srv/data/documents` + `od -c` + `gpg --list-secret-keys` en la app | `.gpg` con UUID y `600`, sin `%PDF-`, 0 llaves privadas |
+| E36 | `document_metadata` en Mongo | Solo `type`, `upload_date`, `uploader_id`, `student_ref`, `storage_path` |
+| E37A / E37B | Navegador: PDF válido / `.txt` renombrado a `.pdf` | "Documento cifrado y guardado" / "no es un PDF válido" |
+| E38 | `pytest app/tests -q` (WSL) | `116 passed, 1 skipped` |
+| E39 | `git ls-files .env` + `git check-ignore -v` + `git log -- .env` (WSL) | `.env` fuera de Git; historial documentado (R13) |
+| E40 | `sudo check_permissions.sh` | `Problemas: 1` (solo el historial de Git) |
 
-### Qué debes poder explicar
+El índice completo, con la prueba y el riesgo de cada captura, está en **`docs/evidence/README.md`**. Los nombres reales de archivo son `E1.png`, `E5B.png`, `E10E11.png`, etc.
+
+### Justificación técnica
 - Cada prueba: qué control demuestra y qué riesgo de la matriz mitiga.
 - Por qué algunas pruebas dan "error" a propósito (3159, 1142, 403, 503, 13): el error **es** el resultado esperado.
 
@@ -636,7 +646,7 @@ PS> Test-NetConnection 192.168.56.10 -Port 3306                      # TcpTestSu
 PS> Test-NetConnection 192.168.56.10 -Port 27017                     # TcpTestSucceeded : False
 ```
 
-### Qué debes poder explicar
+### Justificación técnica
 - El camino de una petición: navegador → TLS → Nginx (443 en la VM → 8443 en el contenedor) → app (red `frontend`) → MySQL con TLS y Mongo (red `backend`, interna).
 - Por qué el navegador avisa y por qué igual la conexión está cifrada.
 - Los dos factores del login: algo que sabes (contraseña, Argon2) y algo que tienes (celular con el secreto TOTP).

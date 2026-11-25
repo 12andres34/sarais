@@ -16,7 +16,7 @@ const appDb = db.getSiblingDB(dbName);
 
 // --- 2. Colección audit_logs ---
 // Solo IDs de MySQL; nada de nombres, correos ni documentos de identidad.
-// Formato v2 (chat de Seguridad): lo escribe app/security/audit.py.
+// Formato v2: lo escribe app/security/audit.py.
 // Mismo esquema en db/mongo/scripts/migrate_audit_validator.js (para volúmenes ya creados).
 appDb.createCollection('audit_logs', {
   validator: {

@@ -1,5 +1,7 @@
 # Secretos y datos locales: nunca a Git
 .env
+.env.*
+!.env.example
 *.gpg
 *.key
 *-key.pem
@@ -15,5 +17,3 @@ __pycache__/
 .pytest_cache/
 logs/
 *.zip
-.env.*
-!.env.example

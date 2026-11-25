@@ -21,7 +21,9 @@ app/
 ## Ejecutar
 ```bash
 docker compose up -d --build
-docker compose exec -e SEED_PASSWORD='UnaClaveDemoLarga2026' app python -m app.scripts.seed_data
+read -rs -p "Contraseña demo: " SEED_PASSWORD; echo; export SEED_PASSWORD
+docker compose exec -e SEED_PASSWORD app python -m app.scripts.seed_data
+unset SEED_PASSWORD
 # abrir http://127.0.0.1:8000  (o https://localhost con Nginx)
 ```
 

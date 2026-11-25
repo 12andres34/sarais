@@ -117,7 +117,7 @@ No necesitan MySQL ni MongoDB: usan dobles falsos. Las pruebas de GPG crean una 
 
 ## 7. Despliegue en la VM
 
-Guía completa, paso a paso: **`docs/despliegue_paso_a_paso.md`** (y la referencia técnica `docs/deployment_vm.md`).
+Guía completa, paso a paso: **`docs/deployment_walkthrough.md`**. Referencia técnica: `docs/deployment_vm.md`. Solución de problemas: `docs/troubleshooting.md`.
 
 Resumen del flujo: `git push` en WSL → en la VM `git pull` → `sudo ./scripts/preflight.sh` (0 FAIL) → `docker compose up -d --build`.
 
@@ -134,7 +134,7 @@ Reglas que no se rompen:
 | `monitor.sh` | Cada 5 min | CPU, RAM, disco y contenedores → CSV; alerta si supera el umbral |
 | `cleanup.sh` | Domingo 3:30 | Borra backups, logs y métricas viejos según la retención |
 
-Otros: `restore.sh`, `verify_encryption.sh`, `check_permissions.sh`, `metrics_report.py`.
+Otros: `restore.sh`, `verify_encryption.sh`, `check_permissions.sh`, `metrics_report.py` (métricas por escenario: reposo, uso, backup) y `app/scripts/reset_password.py` (restablece contraseñas dejando evento en la auditoría).
 
 ## 8. Seguridad (resumen)
 
@@ -162,5 +162,8 @@ Otros: `restore.sh`, `verify_encryption.sh`, `check_permissions.sh`, `metrics_re
 | `docs/risk_analysis.md` | Activos, amenazas, matriz de riesgos (ISO/IEC 27001:2022) |
 | `docs/security_tests.md` | Pruebas de seguridad y evidencias |
 | `docs/infrastructure_guide.md` | Docker, red, volúmenes, scripts |
-| `docs/deployment_vm.md` · `docs/despliegue_paso_a_paso.md` | Despliegue en la VM |
+| `docs/deployment_walkthrough.md` · `docs/deployment_vm.md` | Despliegue en la VM (guía detallada y referencia técnica) |
+| `docs/troubleshooting.md` | Problemas reales del despliegue y su solución |
 | `docs/legal/` | Ley 1581 de 2012 y consentimiento informado |
+| `docs/evidence/` | Capturas de las pruebas con su índice (`README.md`) |
+| `docs/img/` | Tablas y gráficas de métricas |

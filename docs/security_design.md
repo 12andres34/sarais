@@ -99,7 +99,7 @@ GPG usa `/srv/.gnupg`, que es el `HOME` del usuario `sarais` en la imagen. La ap
 docker cp docs_pub.asc sarais_app:/tmp/ && docker exec sarais_app gpg --import /tmp/docs_pub.asc
 ```
 
-**Subida en la app (`/documents`, chat 7).** Flujo de `routers/documents.py` → `services/document_service.py`:
+**Subida en la app (`/documents`).** Flujo de `routers/documents.py` → `services/document_service.py`:
 
 1. Rol `admin` o `teacher` (si no, 403). El docente solo elige estudiantes activos de **sus** grupos y solo los tipos `MEDICAL_EXCUSE`, `REPORT_CARD`, `OTHER`.
 2. Si `Content-Length` supera 10 MB + 64 KB → **413** sin leer el cuerpo. Nginx corta en 11 MB.

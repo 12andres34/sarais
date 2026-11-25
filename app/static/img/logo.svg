@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SARAIS">
+  <!-- Logo genérico de SARAIS (escudo + libro abierto). No representa a ninguna institución real. -->
+  <path d="M32 3 L57 11 V30 C57 45 46 56 32 61 C18 56 7 45 7 30 V11 Z" fill="#1f5e3a"/>
+  <path d="M32 7.5 L53 14.2 V30 C53 42.6 44 52 32 56.5 C20 52 11 42.6 11 30 V14.2 Z" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+  <path d="M17 24 C23 22 28 23 31 26 V44 C28 41.5 23 41 17 42.5 Z" fill="#ffffff"/>
+  <path d="M47 24 C41 22 36 23 33 26 V44 C36 41.5 41 41 47 42.5 Z" fill="#ffffff"/>
+  <path d="M32 13 L34.2 17.5 L39 18 L35.3 21 L36.5 25.5 L32 23 L27.5 25.5 L28.7 21 L25 18 L29.8 17.5 Z" fill="#e07a2c"/>
+</svg>

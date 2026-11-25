@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
     # Protección: el stub de seguridad nunca debe llegar a producción
     if getattr(security, "IS_STUB", False):
         if settings.is_production:
-            raise RuntimeError("app/security es un STUB. Instala el módulo del chat de seguridad.")
+            raise RuntimeError("app/security es un STUB: falta el módulo de seguridad.")
         logger.warning("*** Usando STUB de app/security: solo para desarrollo ***")
 
     # Sin /docs ni /openapi.json: menos superficie de ataque
